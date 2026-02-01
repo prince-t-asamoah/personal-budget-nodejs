@@ -23,7 +23,7 @@ app.use(express.json());
  *
  * @type {Array<Envelope>}
  */
-const envelopes = [];
+let envelopes = [];
 
 app.get("/", (_req, res) => {
   res.send("Personal Budget API 1.0.0");
@@ -81,6 +81,22 @@ app.post("/envelopes", (req, res) => {
   envelopes.push(newEnvelope);
 
   res.status(201).send(newEnvelope);
+});
+
+app.delete('/envelopes/:envelopeId', (req, res) => {
+     const envelopeId = req.params.envelopeId;
+
+     if (!envelopeId) {
+       res.status(400).send("Envelope id must be provided.");
+       return;
+     }
+     /**@type {Array<Envelope>} */
+     const newEnvelopes = envelopes.filter(
+       (envelope) => envelope.id !== envelopeId,
+     );
+
+        envelopes = [...newEnvelopes];
+       res.status(204).send();
 });
 
 module.exports = app;
