@@ -1,34 +1,65 @@
 const express = require("express");
 const app = express();
 
+app.use(express.json());
+
 /**
  * Represents a budget envelope object.
- * 
+ *
  * @typedef {object} Envelope
  * @property {string} id - A numbered id
  * @property {string} name - Name of envelope e.g. "Rent", "Groceries"
- * @property {number} allocatedAmout - Total budgeted amount
+ * @property {number} allocatedAmount - Total budgeted amount
  * @property {number} spentAmount - Amount already spent
  * @property {number} balance - Allocated amount - Spent amount
  * @property {string} currency - ISO code e.g. "GHS", "USD"
  * @property {string} createdAt - ISO timestamp
  * @property {string} updatedAt - ISO timestamp
- * 
+ *
  */
 
 /**
  * All envelopes data
- * 
+ *
  * @type {Array<Envelope>}
  */
 const envelopes = [];
 
 app.get("/", (_req, res) => {
-  res.send('Personal Budget API 1.0.0');
+  res.send("Personal Budget API 1.0.0");
 });
 
 app.get("/envelopes", (_req, res) => {
   res.status(200).send(envelopes);
+});
+
+app.post("/envelopes", (req, res) => {
+  /**@type {Envelope} */
+  const { name, currency, allocatedAmount, spentAmount } = req.body;
+
+  if (!name || !currency || !allocatedAmount || !spentAmount) {
+    res
+      .status(400)
+      .send("name, currency, allocatedAmount and spentAmount must be provided.");
+    return;
+  }
+
+  const date = new Date().toISOString();
+
+  /** @type {Envelope} */
+  const newEnvelope = {
+    id: envelopes.length + 1,
+    name,
+    currency,
+    allocatedAmount,
+    spentAmount,
+    balance: allocatedAmount - spentAmount,
+    createdAt: date,
+    updatedAt: date,
+  };
+  envelopes.push(newEnvelope);
+
+  res.status(201).send(newEnvelope);
 });
 
 module.exports = app;
