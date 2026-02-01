@@ -33,6 +33,25 @@ app.get("/envelopes", (_req, res) => {
   res.status(200).send(envelopes);
 });
 
+app.get("/envelopes/:envelopeId", (req, res) => {
+  const envelopeId = req.params.envelopeId;
+
+  if (!envelopeId) {
+    res.status(400).send("Envelope id must be provided.");
+    return;
+  }
+  /**@type {Envelope} */
+  const envelopeById = envelopes.find(
+    (envelope) => envelope.id === envelopeId,
+  );
+
+  if (!envelopeById) {
+    res.status(404).send(`Envelope with id: ${envelopeId} not found.`);
+  } else {
+    res.status(200).send(envelopeById);
+  }
+});
+
 app.post("/envelopes", (req, res) => {
   /**@type {Envelope} */
   const { name, currency, allocatedAmount, spentAmount } = req.body;
@@ -40,7 +59,9 @@ app.post("/envelopes", (req, res) => {
   if (!name || !currency || !allocatedAmount || !spentAmount) {
     res
       .status(400)
-      .send("name, currency, allocatedAmount and spentAmount must be provided.");
+      .send(
+        "name, currency, allocatedAmount and spentAmount must be provided.",
+      );
     return;
   }
 
@@ -48,7 +69,7 @@ app.post("/envelopes", (req, res) => {
 
   /** @type {Envelope} */
   const newEnvelope = {
-    id: envelopes.length + 1,
+    id: String(envelopes.length + 1),
     name,
     currency,
     allocatedAmount,
