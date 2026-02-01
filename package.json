@@ -1,0 +1,28 @@
+{
+  "name": "personal-budget-nodejs",
+  "version": "1.0.0",
+  "description": "A backend portfolio project built with express.js to serve an API that allows users to create and manage a personal budget.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prince-t-asamoah/personal-budget-nodejs.git"
+  },
+  "keywords": [
+    "nodejs",
+    "backend",
+    "REST API"
+  ],
+  "author": "Prince Asamoah",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/prince-t-asamoah/personal-budget-nodejs/issues"
+  },
+  "homepage": "https://github.com/prince-t-asamoah/personal-budget-nodejs#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
