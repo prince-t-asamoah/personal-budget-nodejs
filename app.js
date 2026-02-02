@@ -6,7 +6,7 @@ app.use(express.json());
 /**
  * Represents a budget envelope object.
  *
- * @typedef {object} Envelope
+ * @typedef {object} BudgetEnvelope
  * @property {string} id - A numbered id
  * @property {string} name - Name of envelope e.g. "Rent", "Groceries"
  * @property {number} allocatedAmount - Total budgeted amount
@@ -21,7 +21,7 @@ app.use(express.json());
 /**
  * All envelopes data
  *
- * @type {Array<Envelope>}
+ * @type {Array<BudgetEnvelope>}
  */
 let envelopes = [];
 
@@ -40,10 +40,8 @@ app.get("/envelopes/:envelopeId", (req, res) => {
     res.status(400).send("Envelope id must be provided.");
     return;
   }
-  /**@type {Envelope} */
-  const envelopeById = envelopes.find(
-    (envelope) => envelope.id === envelopeId,
-  );
+  /**@type {BudgetEnvelope} */
+  const envelopeById = envelopes.find((envelope) => envelope.id === envelopeId);
 
   if (!envelopeById) {
     res.status(404).send(`Envelope with id: ${envelopeId} not found.`);
@@ -83,20 +81,64 @@ app.post("/envelopes", (req, res) => {
   res.status(201).send(newEnvelope);
 });
 
-app.delete('/envelopes/:envelopeId', (req, res) => {
-     const envelopeId = req.params.envelopeId;
+app.patch("/envelopes/:envelopeId", (req, res) => {
+  const envelopeData = req.body;
 
-     if (!envelopeId) {
-       res.status(400).send("Envelope id must be provided.");
-       return;
-     }
-     /**@type {Array<Envelope>} */
-     const newEnvelopes = envelopes.filter(
-       (envelope) => envelope.id !== envelopeId,
-     );
+  if (Object.keys(envelopeData).length === 0) {
+    res.status(400).send("Envelope data must be provided to update.");
+    return;
+  }
+  const envelopeId = req.params.envelopeId;
 
-        envelopes = [...newEnvelopes];
-       res.status(204).send();
+  if (!envelopeId) {
+    res.status(400).send("Envelope id must be provided.");
+    return;
+  }
+
+  const envelopeToBeUpdatedIndex = envelopes.findIndex(
+    (envelope) => envelope.id === envelopeId,
+  );
+  if (envelopeToBeUpdatedIndex === -1) {
+    res.status(404).send(`Budget envelope with id: ${envelopeId} not found.`);
+    return;
+  }
+
+  const budgetEnvelopeToBeUpdate = envelopes[envelopeToBeUpdatedIndex];
+
+  /**@type {BudgetEnvelope} */
+  const updatedEnvelope = {
+    id: budgetEnvelopeToBeUpdate.id,
+    name: envelopeData.name || budgetEnvelopeToBeUpdate.name,
+    currency: envelopeData.currency || budgetEnvelopeToBeUpdate.currency,
+    spentAmount:
+      envelopeData.spentAmount || budgetEnvelopeToBeUpdate.spentAmount,
+    allocatedAmount:
+      envelopeData.allocatedAmoun || budgetEnvelopeToBeUpdate.allocatedAmount,
+    balance:
+      (envelopeData.allocatedAmount ||
+        budgetEnvelopeToBeUpdate.allocatedAmount) -
+      (envelopeData.spentAmount || budgetEnvelopeToBeUpdate.spentAmount),
+    updatedAt: new Date().toISOString(),
+  };
+
+  envelopes[envelopeToBeUpdatedIndex] = 
+  res.status(200).send(updatedEnvelope);
+});
+
+app.delete("/envelopes/:envelopeId", (req, res) => {
+  const envelopeId = req.params.envelopeId;
+
+  if (!envelopeId) {
+    res.status(400).send("Envelope id must be provided.");
+    return;
+  }
+  /**@type {Array<Envelope>} */
+  const newEnvelopes = envelopes.filter(
+    (envelope) => envelope.id !== envelopeId,
+  );
+
+  envelopes = [...newEnvelopes];
+  res.status(204).send();
 });
 
 module.exports = app;
