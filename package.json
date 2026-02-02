@@ -4,6 +4,7 @@
   "description": "A backend portfolio project built with express.js to serve an API that allows users to create and manage a personal budget.",
   "main": "server.js",
   "scripts": {
+    "start": "node --watch server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
