@@ -51,7 +51,7 @@ app.get("/envelopes/:envelopeId", (req, res) => {
 });
 
 app.post("/envelopes", (req, res) => {
-  /**@type {Envelope} */
+  /**@type {BudgetEnvelope} */
   const { name, currency, allocatedAmount, spentAmount } = req.body;
 
   if (!name || !currency || !allocatedAmount || !spentAmount) {
@@ -65,7 +65,7 @@ app.post("/envelopes", (req, res) => {
 
   const date = new Date().toISOString();
 
-  /** @type {Envelope} */
+  /** @type {BudgetEnvelope} */
   const newEnvelope = {
     id: String(envelopes.length + 1),
     name,
@@ -121,7 +121,7 @@ app.patch("/envelopes/:envelopeId", (req, res) => {
     updatedAt: new Date().toISOString(),
   };
 
-  envelopes[envelopeToBeUpdatedIndex] = 
+  envelopes[envelopeToBeUpdatedIndex] = updatedEnvelope;
   res.status(200).send(updatedEnvelope);
 });
 
@@ -132,13 +132,68 @@ app.delete("/envelopes/:envelopeId", (req, res) => {
     res.status(400).send("Envelope id must be provided.");
     return;
   }
-  /**@type {Array<Envelope>} */
+  /**@type {Array<BudgetEnvelope>} */
   const newEnvelopes = envelopes.filter(
     (envelope) => envelope.id !== envelopeId,
   );
 
   envelopes = [...newEnvelopes];
   res.status(204).send();
+});
+
+app.post("/envelopes/transfer/:fromId/:toId", (req, res) => {
+  const { fromId, toId } = req.params;
+  if (!fromId && !toId) {
+    res
+      .status(400)
+      .send("Budget envelope transfer from and to id must be provided.");
+    return;
+  }
+
+  // Check if budget envelopes transfer from and to exist
+  const budgetTransferFromIndex = envelopes.findIndex(
+    (envelope) => envelope.id === fromId,
+  );
+  if (budgetTransferFromIndex === -1) {
+    res.status(404).send(`Budget envelope with id: ${fromId} does not exist.`);
+    return;
+  }
+  const budgetTransferToIndex = envelopes.findIndex(
+    (envelope) => envelope.id === toId,
+  );
+  if (budgetTransferToIndex === -1) {
+    res.status(404).send(`Budget envelope with id: ${toId} does not exist.`);
+    return;
+  }
+
+  // Calculate current transfer budget from and to envelope allocated amount and balance
+  if (!req.body.amount) {
+    res.status(400).send("Budget envelope transfer balance not provided.");
+    return;
+  }
+
+  const budgetTransferFrom = envelopes[budgetTransferFromIndex];
+  const budgetTransferTo = envelopes[budgetTransferToIndex];
+  const currentUpdatedAt = new Date().toISOString();
+  const transferAmount = Number(req.body.amount);
+
+  // Budget transfer from envelope update
+  if (budgetTransferFrom.balance > 0) {
+    budgetTransferFrom.allocatedAmount -= transferAmount;
+    budgetTransferFrom.balance = budgetTransferFrom.allocatedAmount - budgetTransferFrom.spentAmount;
+    budgetTransferFrom.updatedAt = currentUpdatedAt;
+    envelopes[budgetTransferFromIndex] = budgetTransferFrom;
+
+    // Budget transfer to envelope update
+    budgetTransferTo.allocatedAmount += transferAmount;
+    budgetTransferTo.balance =
+      budgetTransferTo.allocatedAmount - budgetTransferTo.spentAmount;
+    budgetTransferFrom.updatedAt = currentUpdatedAt;
+    envelopes[budgetTransferToIndex] = budgetTransferTo;
+    res.status(201).send("Budget transfer successful.");
+  } else {
+    res.status(400).send('Budget transfer amount exceeds envelope balance been transfered from.');
+  }
 });
 
 module.exports = app;
