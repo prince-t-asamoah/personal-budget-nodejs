@@ -1,7 +1,12 @@
 const express = require("express");
+const cors = require('cors');
+const morgan = require('morgan');
+
 const app = express();
 
+app.use(cors())
 app.use(express.json());
+app.use(morgan('tiny'));
 
 /**
  * Represents a budget envelope object.
@@ -54,7 +59,7 @@ app.post("/envelopes", (req, res) => {
   /**@type {BudgetEnvelope} */
   const { name, currency, allocatedAmount, spentAmount } = req.body;
 
-  if (!name || !currency || !allocatedAmount || !spentAmount) {
+  if (!name || !currency || allocatedAmount === undefined || spentAmount === undefined) {
     res
       .status(400)
       .send(
@@ -71,8 +76,8 @@ app.post("/envelopes", (req, res) => {
     name,
     currency,
     allocatedAmount,
-    spentAmount,
-    balance: allocatedAmount - spentAmount,
+    spentAmount: spentAmount || 0,
+    balance: allocatedAmount - spentAmount || 0,
     createdAt: date,
     updatedAt: date,
   };

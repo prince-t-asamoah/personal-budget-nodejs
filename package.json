@@ -24,6 +24,8 @@
   },
   "homepage": "https://github.com/prince-t-asamoah/personal-budget-nodejs#readme",
   "dependencies": {
-    "express": "^5.2.1"
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "morgan": "^1.10.1"
   }
 }
