@@ -1,12 +1,12 @@
 const express = require("express");
-const cors = require('cors');
-const morgan = require('morgan');
+const cors = require("cors");
+const morgan = require("morgan");
 
 const app = express();
 
-app.use(cors())
+app.use(cors());
 app.use(express.json());
-app.use(morgan('tiny'));
+app.use(morgan("tiny"));
 
 /**
  * Represents a budget envelope object.
@@ -59,7 +59,12 @@ app.post("/envelopes", (req, res) => {
   /**@type {BudgetEnvelope} */
   const { name, currency, allocatedAmount, spentAmount } = req.body;
 
-  if (!name || !currency || allocatedAmount === undefined || spentAmount === undefined) {
+  if (
+    !name ||
+    !currency ||
+    allocatedAmount === undefined ||
+    spentAmount === undefined
+  ) {
     res
       .status(400)
       .send(
@@ -155,6 +160,17 @@ app.post("/envelopes/transfer/:fromId/:toId", (req, res) => {
     return;
   }
 
+  const amount = req.body.amount;
+  if (amount === undefined) {
+    res.status(400).send("Budget transfer amount not provided.");
+    return;
+  }
+
+  if (amount === 0) {
+    res.status(201).send("No transfer for zero amount.");
+    return;
+  }
+
   // Check if budget envelopes transfer from and to exist
   const budgetTransferFromIndex = envelopes.findIndex(
     (envelope) => envelope.id === fromId,
@@ -171,21 +187,16 @@ app.post("/envelopes/transfer/:fromId/:toId", (req, res) => {
     return;
   }
 
-  // Calculate current transfer budget from and to envelope allocated amount and balance
-  if (!req.body.amount) {
-    res.status(400).send("Budget envelope transfer balance not provided.");
-    return;
-  }
-
   const budgetTransferFrom = envelopes[budgetTransferFromIndex];
   const budgetTransferTo = envelopes[budgetTransferToIndex];
   const currentUpdatedAt = new Date().toISOString();
   const transferAmount = Number(req.body.amount);
 
-  // Budget transfer from envelope update
-  if (budgetTransferFrom.balance > 0) {
+  if (budgetTransferFrom.balance > transferAmount) {
+    // Budget transfer from envelope update
     budgetTransferFrom.allocatedAmount -= transferAmount;
-    budgetTransferFrom.balance = budgetTransferFrom.allocatedAmount - budgetTransferFrom.spentAmount;
+    budgetTransferFrom.balance =
+      budgetTransferFrom.allocatedAmount - budgetTransferFrom.spentAmount;
     budgetTransferFrom.updatedAt = currentUpdatedAt;
     envelopes[budgetTransferFromIndex] = budgetTransferFrom;
 
@@ -197,7 +208,11 @@ app.post("/envelopes/transfer/:fromId/:toId", (req, res) => {
     envelopes[budgetTransferToIndex] = budgetTransferTo;
     res.status(201).send("Budget transfer successful.");
   } else {
-    res.status(400).send('Budget transfer amount exceeds envelope balance been transfered from.');
+    res
+      .status(400)
+      .send(
+        "Budget transfer amount exceeds envelope balance been transfered from.",
+      );
   }
 });
 
