@@ -92,6 +92,7 @@ app.post("/envelopes", (req, res) => {
 });
 
 app.patch("/envelopes/:envelopeId", (req, res) => {
+   /**@type {BudgetEnvelope} */
   const envelopeData = req.body;
 
   if (Object.keys(envelopeData).length === 0) {
@@ -123,12 +124,13 @@ app.patch("/envelopes/:envelopeId", (req, res) => {
     spentAmount:
       envelopeData.spentAmount || budgetEnvelopeToBeUpdate.spentAmount,
     allocatedAmount:
-      envelopeData.allocatedAmoun || budgetEnvelopeToBeUpdate.allocatedAmount,
+      envelopeData.allocatedAmount || budgetEnvelopeToBeUpdate.allocatedAmount,
     balance:
       (envelopeData.allocatedAmount ||
         budgetEnvelopeToBeUpdate.allocatedAmount) -
       (envelopeData.spentAmount || budgetEnvelopeToBeUpdate.spentAmount),
     updatedAt: new Date().toISOString(),
+    createdAt: budgetEnvelopeToBeUpdate.createdAt
   };
 
   envelopes[envelopeToBeUpdatedIndex] = updatedEnvelope;
