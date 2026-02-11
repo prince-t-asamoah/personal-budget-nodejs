@@ -92,7 +92,7 @@ app.post("/envelopes", (req, res) => {
 });
 
 app.patch("/envelopes/:envelopeId", (req, res) => {
-   /**@type {BudgetEnvelope} */
+  /**@type {BudgetEnvelope} */
   const envelopeData = req.body;
 
   if (Object.keys(envelopeData).length === 0) {
@@ -130,7 +130,7 @@ app.patch("/envelopes/:envelopeId", (req, res) => {
         budgetEnvelopeToBeUpdate.allocatedAmount) -
       (envelopeData.spentAmount || budgetEnvelopeToBeUpdate.spentAmount),
     updatedAt: new Date().toISOString(),
-    createdAt: budgetEnvelopeToBeUpdate.createdAt
+    createdAt: budgetEnvelopeToBeUpdate.createdAt,
   };
 
   envelopes[envelopeToBeUpdatedIndex] = updatedEnvelope;
@@ -216,6 +216,57 @@ app.post("/envelopes/transfer/:fromId/:toId", (req, res) => {
         "Budget transfer amount exceeds envelope balance been transfered from.",
       );
   }
+});
+
+app.post("/envelopes/distribute", (req, res) => {
+  /**
+   * Distribute envelopes request data
+   *
+   * @typedef {Object} DistributeEnvelopeData
+   * @property {number} amount - Amount to distribute
+   * @property {Array<string>} envelopesId - Envelopes ids to distribute
+   */
+  /** @type {DistributeEnvelopeData} - Amount to distribute */
+  const data = req.body;
+  const { amount, envelopesId } = data;
+
+  if (
+    amount === undefined ||
+    amount === 0 ||
+    envelopes === undefined ||
+    envelopes.length === 0
+  ) {
+    return res.status(400).send("Amount and envelopes must be provided.");
+  }
+
+  envelopesId.forEach((envelopeId) => {
+    const envelopeToBeUpatedIndex = envelopes.findIndex(
+      (envelope) => envelope.id === envelopeId,
+    );
+    if (envelopeToBeUpatedIndex === -1) return;
+    const amountToDistributeEach =
+      envelopesId.length > 0
+        ? amount / envelopesId.length
+        : amount;
+    /**@type {BudgetEnvelope} */
+    const updatedEnvelope = {
+      ...envelopes[envelopeToBeUpatedIndex],
+      allocatedAmount:
+        envelopes[envelopeToBeUpatedIndex].allocatedAmount +
+        amountToDistributeEach,
+      balance:
+        envelopes[envelopeToBeUpatedIndex].allocatedAmount +
+        amountToDistributeEach -
+        envelopes[envelopeToBeUpatedIndex].spentAmount,
+      updatedAt: new Date().toISOString(),
+    };
+    envelopes[envelopeToBeUpatedIndex] = updatedEnvelope;
+    res
+      .status(201)
+      .send(
+        `An amount of ${amount} has been successfully distributed to envelopes.`,
+      );
+  });
 });
 
 module.exports = app;
