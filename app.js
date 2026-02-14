@@ -1,12 +1,15 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const path = require('path');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(morgan("tiny"));
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 /**
  * Represents a budget envelope object.
@@ -31,7 +34,7 @@ app.use(morgan("tiny"));
 let envelopes = [];
 
 app.get("/", (_req, res) => {
-  res.send("Personal Budget API 1.0.0");
+  res.render('index.html');
 });
 
 app.get("/envelopes", (_req, res) => {
