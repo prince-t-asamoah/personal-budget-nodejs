@@ -6,18 +6,6 @@
     box-sizing: border-box;
 }
 
-:root {
-    --sage: #8B9A7E;
-    --dark-sage: #6B7A5E;
-    --cream: #FAF7F2;
-    --charcoal: #2C3E3F;
-    --gold: #D4A574;
-    --light-gold: #E8D4B8;
-    --white: #FFFFFF;
-    --shadow: rgba(44, 62, 63, 0.08);
-    --shadow-lg: rgba(44, 62, 63, 0.15);
-}
-
 body {
     font-family: 'Source Sans 3', sans-serif;
     color: var(--charcoal);
