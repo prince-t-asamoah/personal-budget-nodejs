@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-const path = require('path');
+const path = require("path");
 
 const app = express();
 
@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("tiny"));
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
 /**
  * Represents a budget envelope object.
@@ -34,7 +34,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 let envelopes = [];
 
 app.get("/", (_req, res) => {
-  res.render('index.html');
+  res.render("index.html");
+});
+
+app.get("/health", (req, res) => {
+  res.status(200).send();
 });
 
 app.get("/envelopes", (_req, res) => {
@@ -248,9 +252,7 @@ app.post("/envelopes/distribute", (req, res) => {
     );
     if (envelopeToBeUpatedIndex === -1) return;
     const amountToDistributeEach =
-      envelopesId.length > 0
-        ? amount / envelopesId.length
-        : amount;
+      envelopesId.length > 0 ? amount / envelopesId.length : amount;
     /**@type {BudgetEnvelope} */
     const updatedEnvelope = {
       ...envelopes[envelopeToBeUpatedIndex],
