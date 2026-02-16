@@ -38,7 +38,7 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.status(200).send();
+  res.sendStatus(200);
 });
 
 app.get("/envelopes", (_req, res) => {
