@@ -3,6 +3,15 @@ const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
 
+// Load environment file depending on environment 
+const environment = process.env.NODE_ENV || "development";
+const envFilePath =
+  environment === "development"
+    ? path.resolve(process.cwd(), ".env")
+    : path.resolve(process.cwd(), ".env.production");
+
+require("dotenv").config({ path: envFilePath });
+
 const app = express();
 
 app.use(cors());
