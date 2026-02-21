@@ -18,6 +18,20 @@ const signupValidator = [
     .withMessage("Password must be at least 12 characters long."),
 ];
 
+const loginValidator = [
+  body("email")
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Valid email is required"),
+  body("password")
+    .notEmpty()
+    .withMessage("Password is required")
+    .isLength({ min: 12 })
+    .withMessage("Password must be at least 12 characters long."),
+];
+
 module.exports = {
   signupValidator,
+  loginValidator
 };

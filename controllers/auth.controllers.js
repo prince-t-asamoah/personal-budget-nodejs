@@ -42,6 +42,15 @@ const signup = async (req, res, next) => {
   next();
 };
 
+
+/**
+ * Login a user
+ * 
+ * @type {Controller}
+ */
+const login = (req, res, next) => {}
+
 module.exports = {
   signup,
+  login
 };
