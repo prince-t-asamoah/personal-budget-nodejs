@@ -4,12 +4,13 @@ const { UserDto } = require("../dtos/users.dto");
 const { hashPassword } = require("../util/password.util");
 
 /**
- * Signup users controller
- * @param {Request} req
- * @param {Response} res
- * @param {import("express").NextFunction} next
+ * @typedef {import('../types/controller.types').Controller}  Controller
+ */
+
+/**
+ * Signup a new user
  *
- * @returns {void}
+ * @type {Controller}
  */
 const signup = async (req, res, next) => {
   const userData = new SignupDto(req.body);
