@@ -1,3 +1,5 @@
+require("./config/loadEnv")(); // Load environment variables
+
 const app = require("./app");
 const connectDb =  require('./config/connectDb');
 

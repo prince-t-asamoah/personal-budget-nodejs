@@ -2,14 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
 const path = require("path");
-const loadEnv = require("./config/loadEnv");
 const indexRouter = require("./routes/index.routes");
 
-// Load environment variables
-loadEnv();
-
 const app = express();
-
 
 // Middlewares
 app.use(cors());
