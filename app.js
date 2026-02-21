@@ -12,15 +12,11 @@ app.use(express.json());
 app.use(morgan("tiny"));
 app.use(express.static(path.join(__dirname, "public")));
 
-app.use("/", indexRouter);
+app.use("/api/v1", indexRouter);
 
 
 app.get("/", (_req, res) => {
   res.render("index.html");
-});
-
-app.get("/health", (_req, res) => {
-  res.sendStatus(200);
 });
 
 
