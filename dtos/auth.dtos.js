@@ -21,6 +21,23 @@ class SignupDto {
   }
 }
 
+/**
+ * Login data object
+ *
+ * @typedef {Object} LoginDto
+ * @property {string} email - User email
+ * @property {string} password - User password
+ */
+class LoginDto {
+  constructor({ email, password }) {
+    /** @type {string} */
+    this.email = email;
+    /** @type {string} */
+    this.password = password;
+  }
+}
+
 module.exports = {
   SignupDto,
+  LoginDto
 };

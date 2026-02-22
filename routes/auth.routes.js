@@ -15,7 +15,7 @@ authRouter.post(
   authController.signup,
 );
 
-authController.post(
+authRouter.post(
   "/login",
   validateRequest,
   loginValidator,

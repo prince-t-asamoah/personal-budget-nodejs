@@ -1,7 +1,7 @@
 const db = require("../config/db.config");
-const { SignupDto } = require("../dtos/auth.dtos");
+const { SignupDto, LoginDto } = require("../dtos/auth.dtos");
 const { UserDto } = require("../dtos/users.dto");
-const { hashPassword } = require("../util/password.util");
+const { hashPassword, verifyPassword } = require("../util/password.util");
 
 /**
  * @typedef {import('../types/controller.types').Controller}  Controller
@@ -42,15 +42,76 @@ const signup = async (req, res, next) => {
   next();
 };
 
-
 /**
  * Login a user
- * 
+ *
  * @type {Controller}
  */
-const login = (req, res, next) => {}
+const login = async (req, res, next) => {
+  if (req.session.user) {
+    console.log(req.session.user);
+    return res
+      .status(400)
+      .json({ success: false, message: "Already logged in ", data: null });
+  }
+  const loginData = new LoginDto(req.body);
+
+  try {
+    const findUser = await db.query("SELECT * FROM users WHERE email = $1", [
+      loginData.email,
+    ]);
+
+    if (findUser.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User does not exist." });
+    }
+
+    const userData = new UserDto(findUser.rows[0]);
+
+    const isPasswordValid = await verifyPassword(
+      loginData.password,
+      userData.passwordHash,
+    );
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "User email or password is not valid.",
+      });
+    }
+
+    if (!req.session.user) {
+      req.session.user = userData;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      data: {
+        id: userData.id,
+        fullName: userData.fullName,
+        email: userData.email,
+        phoneNumber: userData.phoneNumber,
+        addressDetails: userData.addressDetails,
+        profileImageUrl: userData.profileImageUrl,
+        createdAt: userData.createdAt,
+        updatedAt: userData.updatedAt,
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error,
+      data: null,
+    });
+  }
+  next();
+};
 
 module.exports = {
   signup,
-  login
+  login,
 };
