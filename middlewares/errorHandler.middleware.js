@@ -9,14 +9,32 @@ const { NextFunction, Request, Response } = require("express");
  * @returns {void}
  */
 const errorHandler = (err, _req, res, _next) => {
-  console.error(err.stack);
   /**@type {number} */
   const statusCode = err.status || 500;
+
+  // Server Error
+  if (statusCode === 500) {
+    console.error(err.cause || err);
+    return res.status(statusCode).json(
+      new ErrorResponseDto({
+        message: "Server has experienced an error",
+        error: {
+          type: "ServerError",
+          status: 500,
+        },
+      }),
+    );
+  }
+
+  // Client Error
+  console.error(err);
   res.status(statusCode).json(
     new ErrorResponseDto({
-      success: false,
-      message: "Internal Server",
-      error: err,
+      message: err.message,
+      error: {
+        type: err.name,
+        status: statusCode,
+      },
     }),
   );
 };
