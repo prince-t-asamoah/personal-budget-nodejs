@@ -1,7 +1,7 @@
 const express = require("express");
 const authRouter = express.Router();
 
-const validateRequest = require("../middlewares/validateRequest");
+const validateRequest = require("../middlewares/validateRequest.middleware");
 const authController = require("../controllers/auth.controllers");
 const {
   signupValidator,
@@ -10,15 +10,15 @@ const {
 
 authRouter.post(
   "/signup",
-  validateRequest,
   signupValidator,
+  validateRequest,
   authController.signup,
 );
 
 authRouter.post(
   "/login",
-  validateRequest,
   loginValidator,
+  validateRequest,
   authController.login,
 );
 
