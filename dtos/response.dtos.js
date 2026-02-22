@@ -22,7 +22,7 @@ class ErrorResponseDto extends ResponseDto {
   /**
    * @param {ErrorResponse} params
    */
-  constructor({ success, message, error }) {
+  constructor({ success = false, message, error }) {
     super({ success, message, error });
     /**@type {object} */
     this.error = error;
@@ -33,7 +33,7 @@ class SuccessResponseDto extends ResponseDto {
   /**
    * @param {SuccessResponse} params
    */
-  constructor({ success, message, data }) {
+  constructor({ success = true, message, data }) {
     super({ success, message, data });
     /**@type {object} */
     this.data = data;
