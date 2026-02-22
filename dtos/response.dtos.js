@@ -1,3 +1,5 @@
+const BaseDto = require("./base.dto");
+
 /**
  * Response Dto
  *
@@ -6,7 +8,7 @@
  * @typedef {import('../types/response.types').BaseResponse} BaseResponse
  */
 
-class ResponseDto {
+class ResponseDto extends BaseDto {
   /**
    * @param {BaseResponse} params
    */
@@ -15,6 +17,7 @@ class ResponseDto {
     this.success = success;
     /**@type {string} */
     this.message = message;
+    this.filterUndefined();
   }
 }
 
@@ -23,9 +26,10 @@ class ErrorResponseDto extends ResponseDto {
    * @param {ErrorResponse} params
    */
   constructor({ success = false, message, error }) {
-    super({ success, message, error });
+    super({ success, message });
     /**@type {object} */
     this.error = error;
+    this.filterUndefined();
   }
 }
 
@@ -34,9 +38,10 @@ class SuccessResponseDto extends ResponseDto {
    * @param {SuccessResponse} params
    */
   constructor({ success = true, message, data }) {
-    super({ success, message, data });
+    super({ success, message });
     /**@type {object} */
     this.data = data;
+    this.filterUndefined();
   }
 }
 

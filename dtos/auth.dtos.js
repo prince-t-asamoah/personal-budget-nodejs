@@ -1,3 +1,5 @@
+const BaseDto = require("./base.dto");
+
 /**
  * Signup data object
  *
@@ -6,18 +8,19 @@
  * @property {string} email - User email
  * @property {password} password - User password
  */
-
-class SignupDto {
+class SignupDto extends BaseDto {
   /**
    * @param {SignupDto} params
    */
   constructor({ fullname, email, password }) {
+    super();
     /** @type {string} */
     this.fullname = fullname;
     /** @type {string} */
     this.email = email;
     /**@type {string} */
     this.password = password;
+    this.filterUndefined();
   }
 }
 
@@ -28,12 +31,14 @@ class SignupDto {
  * @property {string} email - User email
  * @property {string} password - User password
  */
-class LoginDto {
+class LoginDto extends BaseDto {
   constructor({ email, password }) {
+    super();
     /** @type {string} */
     this.email = email;
     /** @type {string} */
     this.password = password;
+    this.filterUndefined();
   }
 }
 
