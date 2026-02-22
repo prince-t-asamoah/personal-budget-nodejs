@@ -49,10 +49,9 @@ const signup = async (req, res, next) => {
  */
 const login = async (req, res, next) => {
   if (req.session.user) {
-    console.log(req.session.user);
     return res
       .status(400)
-      .json({ success: false, message: "Already logged in ", data: null });
+      .json({ success: false, message: "Already logged in", data: null });
   }
   const loginData = new LoginDto(req.body);
 
