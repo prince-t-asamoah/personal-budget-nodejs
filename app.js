@@ -5,6 +5,7 @@ const path = require("path");
 const session = require("express-session");
 const indexRouter = require("./routes/index.routes");
 const sessionConfig = require("./config/session.config");
+const errorHandler = require("./middlewares/errorHandler.middleware");
 
 const app = express();
 
@@ -28,5 +29,7 @@ app.use("/api/v1", indexRouter);
 app.get("/", (_req, res) => {
   res.render("index.html");
 });
+
+app.use(errorHandler);
 
 module.exports = app;
