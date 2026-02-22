@@ -1,20 +1,12 @@
-class AuthError extends Error {
-  constructor(message, status, options = {}) {
-    super(message);
-    this.status = status;
-    this.name = this.constructor.name;
-    this.options = options;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
+const BaseError = require("./BaseError");
 
-class LoginError extends AuthError {
+class LoginError extends BaseError {
   constructor(message, status, options) {
     super(message, status, options);
   }
 }
 
-class SignupError extends AuthError {
+class SignupError extends BaseError {
   constructor(message, status, options) {
     super(message, status, options);
   }
