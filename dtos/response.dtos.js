@@ -13,6 +13,7 @@ class ResponseDto extends BaseDto {
    * @param {BaseResponse} params
    */
   constructor({ success, message }) {
+    super();
     /**@type {boolean} */
     this.success = success;
     /**@type {string} */
