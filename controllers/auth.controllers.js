@@ -81,6 +81,8 @@ const login = async (req, res, next) => {
     } catch (error) {
       throw new LoginError(
         `Retrieving user with email: ${loginData.email} from database failed.`,
+        500,
+        { cause: error },
       );
     }
 
@@ -98,7 +100,9 @@ const login = async (req, res, next) => {
         userData.passwordHash,
       );
     } catch (error) {
-      throw new LoginError("Hashed password verification failed.");
+      throw new LoginError("Hashed password verification failed.", 500, {
+        cause: error,
+      });
     }
 
     if (!isPasswordValid) {
