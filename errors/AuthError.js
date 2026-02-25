@@ -12,7 +12,14 @@ class SignupError extends BaseError {
   }
 }
 
+class LogoutError extends BaseError {
+  constructor(message, status, options) {
+    super(message, status, options);
+  }
+}
+
 module.exports = {
   LoginError,
   SignupError,
+  LogoutError
 };

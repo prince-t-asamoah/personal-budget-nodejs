@@ -2,7 +2,7 @@ const db = require("../config/db.config");
 const { SignupDto, LoginDto } = require("../dtos/auth.dtos");
 const { SuccessResponseDto } = require("../dtos/response.dtos");
 const { UserDto } = require("../dtos/users.dto");
-const { LoginError, SignupError } = require("../errors/AuthError");
+const { LoginError, SignupError, LogoutError } = require("../errors/AuthError");
 const { hashPassword, verifyPassword } = require("../util/password.util");
 
 /**
@@ -133,7 +133,29 @@ const login = async (req, res, next) => {
   }
 };
 
+/**
+ * Logout a user
+ *
+ * @type {Controller}
+ */
+const logout = (req, res, next) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error("Logout Error", err);
+      return next(LogoutError("Error destroying session", 500, { cause: err }));
+    }
+    res
+      .clearCookie("connect.sid")
+      .status(200)
+      .json(
+        new SuccessResponseDto({
+          message: "Logout successful",
+        }),
+      );
+  });
+};
 module.exports = {
   signup,
   login,
+  logout,
 };
