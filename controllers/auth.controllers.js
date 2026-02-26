@@ -109,9 +109,8 @@ const login = async (req, res, next) => {
       throw new LoginError("User email or password is not valid.", 401);
     }
 
-    if (!req.session.user) {
-      req.session.user = userData;
-    }
+
+    req.session.user = userData;
 
     res.status(200).json(
       new SuccessResponseDto({
@@ -154,6 +153,7 @@ const logout = (req, res, next) => {
       );
   });
 };
+
 module.exports = {
   signup,
   login,
