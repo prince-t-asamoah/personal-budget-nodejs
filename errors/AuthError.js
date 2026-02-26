@@ -18,8 +18,15 @@ class LogoutError extends BaseError {
   }
 }
 
+class UnAuthorizedError extends BaseError {
+  constructor(message = 'User not authorized, please login.', status = 401, options) {
+    super(message, status, options);
+  }
+}
+
 module.exports = {
   LoginError,
   SignupError,
-  LogoutError
+  LogoutError,
+  UnAuthorizedError,
 };
