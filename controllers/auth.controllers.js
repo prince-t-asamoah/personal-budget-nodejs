@@ -45,7 +45,7 @@ const signup = async (req, res, next) => {
       );
     }
     /** @type {UserDto} */
-    const newData = result.rows[0];
+    const newData = queryResult.rows[0];
 
     res.json(
       new SuccessResponseDto({
