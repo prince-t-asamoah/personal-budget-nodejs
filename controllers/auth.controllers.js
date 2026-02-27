@@ -1,3 +1,4 @@
+const { findPackageJSON } = require("module");
 const db = require("../config/db.config");
 const { SignupDto, LoginDto } = require("../dtos/auth.dtos");
 const { SuccessResponseDto } = require("../dtos/response.dtos");
@@ -18,10 +19,21 @@ const { hashPassword, verifyPassword } = require("../util/password.util");
 const signup = async (req, res, next) => {
   const userData = new SignupDto(req.body);
   let hashedPassword = "";
-  /**@type {DatabaseQuery} */
-  let queryResult;
+
+  const signupClient = await db.connect();
 
   try {
+    // Check if user already exist
+    /**@type {DatabaseQuery} */
+    const userExistQueryResult = await signupClient.query(
+      "SELECT * FROM users WHERE email = $1",
+      [userData.email],
+    );
+
+    if (userExistQueryResult.rows.length) {
+      throw new SignupError("User account already exist", 409);
+    }
+
     // User password hashing
     try {
       hashedPassword = await hashPassword(userData.password);
@@ -31,11 +43,22 @@ const signup = async (req, res, next) => {
 
     // Save new user fullname, email and hashed password into database
     try {
-      queryResult = await db.query(
+      /**@type {DatabaseQuery} */
+      const newUserQueryResult = await signupClient.query(
         `INSERT INTO users (full_name, email, password_hash)
          VALUES($1, $2, $3)
          RETURNING id, full_name, email, created_at, updated_at`,
         [userData.fullname, userData.email, hashedPassword],
+      );
+
+      /** @type {UserDto} */
+      const newData = newUserQueryResult.rows[0];
+
+      return res.json(
+        new SuccessResponseDto({
+          message: "User signup successful",
+          data: new UserDto(newData),
+        }),
       );
     } catch (error) {
       throw new SignupError(
@@ -44,17 +67,10 @@ const signup = async (req, res, next) => {
         { cause: error },
       );
     }
-    /** @type {UserDto} */
-    const newData = queryResult.rows[0];
-
-    res.json(
-      new SuccessResponseDto({
-        message: "User signup successful",
-        data: new UserDto(newData),
-      }),
-    );
   } catch (error) {
     next(error);
+  } finally {
+    signupClient.release();
   }
 };
 
@@ -108,7 +124,6 @@ const login = async (req, res, next) => {
     if (!isPasswordValid) {
       throw new LoginError("User email or password is not valid.", 401);
     }
-
 
     req.session.user = userData;
 
