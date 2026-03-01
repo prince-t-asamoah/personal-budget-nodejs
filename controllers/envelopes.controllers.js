@@ -29,9 +29,11 @@ const getAllEnvelopes = async (req, res, next) => {
       throw new EnvelopeError("Fetching all envelopes failed", 500);
     }
 
+    const envelopes = data.map((env) => new EnvelopeDto(env));
+
     return res.status(200).json(
       new SuccessResponseDto({
-        data: new EnvelopeDto(data),
+        data: envelopes,
         message: "Fetching user envelopes successful",
       }),
     );
