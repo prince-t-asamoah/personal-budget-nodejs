@@ -1,5 +1,5 @@
 
-require("./config/loadEnv")(); // Load environment variables
+require("./../config/loadEnv")(); // Load environment variables
 
 const fs = require("fs");
 const path = require("path");
