@@ -2,7 +2,10 @@ const express = require("express");
 const envelopesRouter = express.Router();
 const envelopesController = require("../controllers/envelopes.controllers");
 const EnvelopeDto = require("../dtos/envelope.dtos");
-
+const {
+  createEnvelopeValidator,
+} = require("../validators/envelopes.validators");
+const validateResult = require("../middlewares/validateRequest.middleware");
 /**
  * Budget Envelope
  *
@@ -36,41 +39,12 @@ envelopesRouter.get("/:envelopeId", (req, res) => {
   }
 });
 
-envelopesRouter.post("/", (req, res) => {
-  /**@type {Envelope} */
-  const { name, currency, allocatedAmount, spentAmount } = req.body;
-
-  if (
-    !name ||
-    !currency ||
-    allocatedAmount === undefined ||
-    spentAmount === undefined
-  ) {
-    res
-      .status(400)
-      .send(
-        "name, currency, allocatedAmount and spentAmount must be provided.",
-      );
-    return;
-  }
-
-  const date = new Date().toISOString();
-
-  /** @type {Envelope} */
-  const newEnvelope = {
-    id: String(envelopes.length + 1),
-    name,
-    currency,
-    allocatedAmount,
-    spentAmount: spentAmount || 0,
-    balance: allocatedAmount - spentAmount || 0,
-    createdAt: date,
-    updatedAt: date,
-  };
-  envelopes.push(newEnvelope);
-
-  res.status(201).send(newEnvelope);
-});
+envelopesRouter.post(
+  "/",
+  createEnvelopeValidator,
+  validateResult,
+  envelopesController.createEnvelope,
+);
 
 envelopesRouter.patch("/:envelopeId", (req, res) => {
   /**@type {Envelope} */

@@ -42,6 +42,40 @@ const getAllEnvelopes = async (req, res, next) => {
   }
 };
 
+
+/**
+ * Create an envelope
+ *
+ * @type {Controller}
+ */
+const createEnvelope = async (req, res, next) => {
+  /**@type {Envelope} */
+  const { name, currency, allocatedAmount, spentAmount } = req.body;
+
+  const userId = req.session.user.id;
+  const balance = allocatedAmount - spentAmount || 0;
+
+  try {
+    /** @type {EnvelopeQuery} */
+    const query = await db.query(
+      `INSERT INTO envelopes(name, currency, allocated_amount, spent_amount, balance, user_id)
+         VALUES($1, $2, $3, $4, $5, $6) RETURNING id, name, currency, allocated_amount, spent_amount, balance, created_at, updated_at`,
+      [name, currency, allocatedAmount, spentAmount, balance, userId],
+    );
+
+    const data = query.rows[0];
+
+    return res.status(201).json(
+      new SuccessResponseDto({
+        data: new EnvelopeDto(data),
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllEnvelopes,
+  createEnvelope
 };
