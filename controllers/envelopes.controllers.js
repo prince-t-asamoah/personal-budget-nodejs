@@ -42,7 +42,6 @@ const getAllEnvelopes = async (req, res, next) => {
   }
 };
 
-
 /**
  * Create an envelope
  *
@@ -77,5 +76,5 @@ const createEnvelope = async (req, res, next) => {
 
 module.exports = {
   getAllEnvelopes,
-  createEnvelope
+  createEnvelope,
 };
