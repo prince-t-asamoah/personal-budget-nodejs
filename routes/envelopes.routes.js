@@ -90,21 +90,7 @@ envelopesRouter.patch("/:envelopeId", (req, res) => {
   res.status(200).send(updatedEnvelope);
 });
 
-envelopesRouter.delete("/:envelopeId", (req, res) => {
-  const envelopeId = req.params.envelopeId;
-
-  if (!envelopeId) {
-    res.status(400).send("Envelope id must be provided.");
-    return;
-  }
-  /**@type {Array<Envelope>} */
-  const newEnvelopes = envelopes.filter(
-    (envelope) => envelope.id !== envelopeId,
-  );
-
-  envelopes = [...newEnvelopes];
-  res.status(204).send();
-});
+envelopesRouter.delete("/:envelopeId", envelopesController.deleteEnvelope);
 
 envelopesRouter.post("/transfer/:fromId/:toId", (req, res) => {
   const { fromId, toId } = req.params;

@@ -20,7 +20,7 @@ const getAllEnvelopes = async (req, res, next) => {
   try {
     /** @type {EnvelopeQuery} */
     const queryResult = await db.query(
-      "SELECT * FROM envelopes WHERE user_id = $1",
+      "SELECT * FROM envelopes WHERE user_id = $1 AND deleted_at IS NULL",
       [userId],
     );
 
@@ -58,7 +58,7 @@ const createEnvelope = async (req, res, next) => {
     /** @type {EnvelopeQuery} */
     const query = await db.query(
       `INSERT INTO envelopes(name, currency, allocated_amount, spent_amount, balance, user_id)
-         VALUES($1, $2, $3, $4, $5, $6) RETURNING id, name, currency, allocated_amount, spent_amount, balance, created_at, updated_at`,
+         VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
       [name, currency, allocatedAmount, spentAmount, balance, userId],
     );
 
@@ -74,7 +74,43 @@ const createEnvelope = async (req, res, next) => {
   }
 };
 
+/**
+ *  Delete envelope by id
+ *  @type {Controller}
+ *
+ */
+const deleteEnvelope = async (req, res, next) => {
+  const userId = req.session.user.id;
+  const envelopeId = req.params.envelopeId;
+
+  try {
+    /** @type {EnvelopeQuery} */
+    const query = await db.query(
+      "UPDATE envelopes SET deleted_at = NOW() WHERE user_id = $1 AND id = $2 RETURNING *",
+      [userId, envelopeId],
+    );
+
+    const data = query.rows[0];
+
+    if (!data) {
+      throw new EnvelopeError(
+        `Deleting envelope with id: ${envelopeId} failed.`,
+      );
+    }
+
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message: "Envelope deleted successfully.",
+        data
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllEnvelopes,
   createEnvelope,
+  deleteEnvelope,
 };
