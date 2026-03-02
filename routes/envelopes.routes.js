@@ -4,8 +4,11 @@ const envelopesController = require("../controllers/envelopes.controllers");
 const EnvelopeDto = require("../dtos/envelope.dtos");
 const {
   createEnvelopeValidator,
+  envelopeIdValidator,
 } = require("../validators/envelopes.validators");
 const validateResult = require("../middlewares/validateRequest.middleware");
+const EnvelopeError = require("../errors/EnvelopeError");
+const validateRequest = require("../middlewares/validateRequest.middleware");
 /**
  * Budget Envelope
  *
@@ -90,7 +93,12 @@ envelopesRouter.patch("/:envelopeId", (req, res) => {
   res.status(200).send(updatedEnvelope);
 });
 
-envelopesRouter.delete("/:envelopeId", envelopesController.deleteEnvelope);
+envelopesRouter.delete(
+  "/:envelopeId",
+  envelopeIdValidator,
+  validateRequest,
+  envelopesController.deleteEnvelope,
+);
 
 envelopesRouter.post("/transfer/:fromId/:toId", (req, res) => {
   const { fromId, toId } = req.params;

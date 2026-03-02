@@ -1,4 +1,4 @@
-const { body } = require("express-validator");
+const { body, param } = require("express-validator");
 
 const createEnvelopeValidator = [
   body("name")
@@ -24,6 +24,16 @@ const createEnvelopeValidator = [
     .withMessage("Fullname must be a number"),
 ];
 
+const envelopeIdValidator = [
+  param("envelopeId")
+    .exists()
+    .withMessage("Envelope id is required")
+    .notEmpty()
+    .withMessage("Envelope id cannot be empty")
+    .isUUID()
+    .withMessage("Envelope id must be a UUID string"),
+];
 module.exports = {
   createEnvelopeValidator,
+  envelopeIdValidator
 };
