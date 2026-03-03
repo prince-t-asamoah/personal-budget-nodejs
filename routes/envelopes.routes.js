@@ -5,6 +5,7 @@ const EnvelopeDto = require("../dtos/envelope.dtos");
 const {
   createEnvelopeValidator,
   envelopeIdValidator,
+  updateEnvelopeValidator,
 } = require("../validators/envelopes.validators");
 const validateResult = require("../middlewares/validateRequest.middleware");
 const EnvelopeError = require("../errors/EnvelopeError");
@@ -49,49 +50,13 @@ envelopesRouter.post(
   envelopesController.createEnvelope,
 );
 
-envelopesRouter.patch("/:envelopeId", (req, res) => {
-  /**@type {Envelope} */
-  const envelopeData = req.body;
-
-  if (Object.keys(envelopeData).length === 0) {
-    res.status(400).send("Envelope data must be provided to update.");
-    return;
-  }
-  const envelopeId = req.params.envelopeId;
-
-  if (!envelopeId) {
-    res.status(400).send("Envelope id must be provided.");
-    return;
-  }
-
-  const envelopeToBeUpdatedIndex = envelopes.findIndex(
-    (envelope) => envelope.id === envelopeId,
-  );
-  if (envelopeToBeUpdatedIndex === -1) {
-    res.status(404).send(`Budget envelope with id: ${envelopeId} not found.`);
-    return;
-  }
-
-  const EnvelopeToBeUpdate = envelopes[envelopeToBeUpdatedIndex];
-
-  /**@type {Envelope} */
-  const updatedEnvelope = {
-    id: EnvelopeToBeUpdate.id,
-    name: envelopeData.name || EnvelopeToBeUpdate.name,
-    currency: envelopeData.currency || EnvelopeToBeUpdate.currency,
-    spentAmount: envelopeData.spentAmount || EnvelopeToBeUpdate.spentAmount,
-    allocatedAmount:
-      envelopeData.allocatedAmount || EnvelopeToBeUpdate.allocatedAmount,
-    balance:
-      (envelopeData.allocatedAmount || EnvelopeToBeUpdate.allocatedAmount) -
-      (envelopeData.spentAmount || EnvelopeToBeUpdate.spentAmount),
-    updatedAt: new Date().toISOString(),
-    createdAt: EnvelopeToBeUpdate.createdAt,
-  };
-
-  envelopes[envelopeToBeUpdatedIndex] = updatedEnvelope;
-  res.status(200).send(updatedEnvelope);
-});
+envelopesRouter.put(
+  "/:envelopeId",
+  envelopeIdValidator,
+  updateEnvelopeValidator,
+  validateRequest,
+  envelopesController.updateEnvelope,
+);
 
 envelopesRouter.delete(
   "/:envelopeId",

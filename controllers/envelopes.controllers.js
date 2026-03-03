@@ -101,7 +101,44 @@ const deleteEnvelope = async (req, res, next) => {
     return res.status(200).json(
       new SuccessResponseDto({
         message: "Envelope deleted successfully.",
-        data
+        data,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ *  Update envelope by id
+ * @type {Controller}
+ */
+const updateEnvelope = async (req, res, next) => {
+  /**@type {Envelope} */
+  const { name, allocatedAmount, currency, balance } = req.body;
+  const envelopeId = req.params.envelopeId;
+  const userId = req.session.user.id;
+
+  try {
+    /**@type {EnvelopeQuery} */
+    const query = await db.query(
+      `UPDATE envelopes SET name = $1, allocated_amount = $2, currency = $3, balance = $4, updated_at = Now() WHERE user_id = $5 AND id = $6 RETURNING *`,
+      [name, allocatedAmount, currency, balance, userId, envelopeId],
+    );
+
+    const data = query.rows[0];
+
+    if (!data) {
+      throw new EnvelopeError(
+        `Updating envelope with id:${envelopeId} failed.`,
+        500,
+      );
+    }
+
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message: "Envelope updated successfully",
+        data: new EnvelopeDto(data),
       }),
     );
   } catch (error) {
@@ -113,4 +150,5 @@ module.exports = {
   getAllEnvelopes,
   createEnvelope,
   deleteEnvelope,
+  updateEnvelope,
 };
