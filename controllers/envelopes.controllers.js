@@ -115,15 +115,23 @@ const deleteEnvelope = async (req, res, next) => {
  */
 const updateEnvelope = async (req, res, next) => {
   /**@type {Envelope} */
-  const { name, allocatedAmount, currency, balance } = req.body;
+  const { name, allocatedAmount, spentAmount, currency, balance } = req.body;
   const envelopeId = req.params.envelopeId;
   const userId = req.session.user.id;
 
   try {
     /**@type {EnvelopeQuery} */
     const query = await db.query(
-      `UPDATE envelopes SET name = $1, allocated_amount = $2, currency = $3, balance = $4, updated_at = Now() WHERE user_id = $5 AND id = $6 RETURNING *`,
-      [name, allocatedAmount, currency, balance, userId, envelopeId],
+      `UPDATE envelopes SET name = $1, allocated_amount = $2, spent_amount = $3, currency = $4, balance = $5, updated_at = Now() WHERE user_id = $6 AND id = $7 RETURNING *`,
+      [
+        name,
+        allocatedAmount,
+        spentAmount,
+        currency,
+        balance,
+        userId,
+        envelopeId,
+      ],
     );
 
     const data = query.rows[0];
