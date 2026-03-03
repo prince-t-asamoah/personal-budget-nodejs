@@ -8,8 +8,7 @@ const {
   updateEnvelopeValidator,
 } = require("../validators/envelopes.validators");
 const validateResult = require("../middlewares/validateRequest.middleware");
-const EnvelopeError = require("../errors/EnvelopeError");
-const validateRequest = require("../middlewares/validateRequest.middleware");
+
 /**
  * Budget Envelope
  *
@@ -54,14 +53,14 @@ envelopesRouter.put(
   "/:envelopeId",
   envelopeIdValidator,
   updateEnvelopeValidator,
-  validateRequest,
+  validateResult,
   envelopesController.updateEnvelope,
 );
 
 envelopesRouter.delete(
   "/:envelopeId",
   envelopeIdValidator,
-  validateRequest,
+  validateResult,
   envelopesController.deleteEnvelope,
 );
 
