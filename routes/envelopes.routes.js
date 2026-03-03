@@ -25,22 +25,11 @@ let envelopes = [];
 
 envelopesRouter.get("/", envelopesController.getAllEnvelopes);
 
-envelopesRouter.get("/:envelopeId", (req, res) => {
-  const envelopeId = req.params.envelopeId;
-
-  if (!envelopeId) {
-    res.status(400).send("Envelope id must be provided.");
-    return;
-  }
-  /**@type {BudgetEnvelope} */
-  const envelopeById = envelopes.find((envelope) => envelope.id === envelopeId);
-
-  if (!envelopeById) {
-    res.status(404).send(`Envelope with id: ${envelopeId} not found.`);
-  } else {
-    res.status(200).send(envelopeById);
-  }
-});
+envelopesRouter.get(
+  "/:envelopeId",
+  envelopeIdValidator,
+  envelopesController.getEnvelope,
+);
 
 envelopesRouter.post(
   "/",

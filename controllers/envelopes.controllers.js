@@ -154,9 +154,43 @@ const updateEnvelope = async (req, res, next) => {
   }
 };
 
+/**
+ * Get envelope by id
+ * @type {Controller}
+ */
+const getEnvelope = async (req, res, next) => {
+  const envelopeId = req.params.envelopeId;
+  const userId = req.session.user.id;
+  try {
+    /**@type {EnvelopeQuery} */
+    const query = await db.query(
+      "SELECT * FROM envelopes WHERE user_id = $1 AND id = $2",
+      [userId, envelopeId],
+    );
+
+    const data = query.rows[0];
+    if (!data) {
+      return res
+        .status(404)
+        .json(
+          new EnvelopeError(`Envelope with id: ${envelopeId} not found.`, 404),
+        );
+    }
+
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message: "Envelope fetched successfully",
+        data: new EnvelopeDto(data),
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
 module.exports = {
   getAllEnvelopes,
   createEnvelope,
   deleteEnvelope,
   updateEnvelope,
+  getEnvelope,
 };
