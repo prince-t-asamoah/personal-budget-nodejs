@@ -1,5 +1,5 @@
 const { body, param } = require("express-validator");
-const validations = {
+const validationsBody = {
   name: body("name")
     .exists({ values: "undefined" })
     .withMessage("Name is required")
@@ -31,27 +31,9 @@ const validations = {
 };
 
 const createEnvelopeValidator = [
-  body("name")
-    .exists({ values: "undefined" })
-    .withMessage("Name is required")
-    .notEmpty()
-    .withMessage("Name cannot be empty")
-    .isString()
-    .withMessage("Name must be a string"),
-  body("currency")
-    .exists({ values: "undefined" })
-    .withMessage("Currency is required")
-    .notEmpty()
-    .withMessage("Currency cannot be empty")
-    .isString()
-    .withMessage("Currency must be a string"),
-  body("allocatedAmount")
-    .exists({ values: "undefined" })
-    .withMessage("Allocated amount is required")
-    .isInt({ min: 0 })
-    .withMessage("Allocated amount cannot be less than or equal to zero")
-    .isNumeric()
-    .withMessage("Fullname must be a number"),
+  validationsBody.name,
+  validationsBody.currency,
+  validationsBody.allocatedAmount,
 ];
 
 const envelopeIdValidator = [
@@ -65,14 +47,14 @@ const envelopeIdValidator = [
 ];
 
 const updateEnvelopeValidator = [
-  validations.name,
-  validations.allocatedAmount,
-  validations.currency,
-  validations.balance,
+  validationsBody.name,
+  validationsBody.allocatedAmount,
+  validationsBody.currency,
+  validationsBody.balance,
 ];
 
 module.exports = {
   createEnvelopeValidator,
   envelopeIdValidator,
-  updateEnvelopeValidator
+  updateEnvelopeValidator,
 };
