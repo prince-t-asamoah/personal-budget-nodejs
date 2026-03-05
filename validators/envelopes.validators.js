@@ -17,8 +17,8 @@ const validationsBody = {
   allocatedAmount: body("allocatedAmount")
     .exists({ values: "undefined" })
     .withMessage("Allocated amount is required")
-    .isInt({ min: 0 })
-    .withMessage("Allocated amount cannot be less than or equal to zero")
+    .matches(/^\-?[0-9]+(?:\.[0-9]{2})?$/)
+    .withMessage("Allocated amount cannot have more than two decimal places")
     .isNumeric()
     .withMessage("Allocated amount must be a number"),
   balance: body("balance")
@@ -30,12 +30,6 @@ const validationsBody = {
     .withMessage("Balance amount must be a number"),
 };
 
-const createEnvelopeValidator = [
-  validationsBody.name,
-  validationsBody.currency,
-  validationsBody.allocatedAmount,
-];
-
 const envelopeIdValidator = [
   param("envelopeId")
     .exists()
@@ -46,6 +40,12 @@ const envelopeIdValidator = [
     .withMessage("Envelope id must be a UUID string"),
 ];
 
+const createEnvelopeValidator = [
+  validationsBody.name,
+  validationsBody.currency,
+  validationsBody.allocatedAmount,
+];
+
 const updateEnvelopeValidator = [
   validationsBody.name,
   validationsBody.allocatedAmount,
@@ -53,8 +53,24 @@ const updateEnvelopeValidator = [
   validationsBody.balance,
 ];
 
+const distributeFundsValidator = [
+  body("amount")
+    .exists({ values: "undefined" })
+    .withMessage("Distributed amount is required")
+    .isInt({ min: 0 })
+    .withMessage("Distributed amount cannot be less than or equal to zero")
+    .isNumeric()
+    .withMessage("Distributed amount must be a number"),
+  body("envelopesId")
+    .exists({ values: "undefined" })
+    .withMessage("Envelopes id is required")
+    .isArray({ min: 1 })
+    .withMessage("Envelopes id must be a non-empty array"),
+];
+
 module.exports = {
   createEnvelopeValidator,
   envelopeIdValidator,
   updateEnvelopeValidator,
+  distributeFundsValidator
 };

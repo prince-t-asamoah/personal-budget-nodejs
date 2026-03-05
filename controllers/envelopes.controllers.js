@@ -7,6 +7,7 @@ const { EnvelopeDto } = require("../dtos/envelope.dtos");
  * @typedef {import('../types/controller.types').Controller}  Controller
  * @typedef {import('../types/envelope.types').Envelope} Envelope
  * @typedef {import('pg').QueryResult<Envelope>} EnvelopeQuery
+ * 
  */
 
 /**
@@ -187,10 +188,97 @@ const getEnvelope = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Distrubute funds among envelopes
+ *
+ * @type {Controller} */
+const distributeFunds = async (req, res, next) => {
+  /**
+   * Distribute envelopes request data
+   *
+   * @typedef {Object} DistributeEnvelopeData
+   * @property {number} amount - Amount to distribute
+   * @property {Array<string>} envelopesId - Envelopes ids to distribute
+   */
+
+  /** @type {DistributeEnvelopeData} - Amount to distribute */
+  const { amount, envelopesId } = req.body;
+
+  /** @type {string} */
+  const userId = req.session.user.id;
+  const distributionQuery = await db.connect();
+
+  try {
+    // Get all the envelopes to be updated
+    const dbPlaceholders = envelopesId
+      .map((_, index) => `$${index + 2}`)
+      .join(",");
+
+    /** @type {EnvelopeQuery} */
+    const selectEnvelopesQuery = await distributionQuery.query(
+      `SELECT * FROM envelopes WHERE user_id = $1 AND id IN (${dbPlaceholders})`,
+      [userId, ...envelopesId],
+    );
+
+    /** @type {Array<Envelope>} */
+    const selectQueryEnvelopes = selectEnvelopesQuery.rows;
+
+    if (selectQueryEnvelopes && selectQueryEnvelopes.length === 0) {
+      throw new EnvelopeError("No envelopes to distribute funds");
+    }
+
+    const envelopes = selectQueryEnvelopes.map((env) => new EnvelopeDto(env));
+
+    // Updated each selected envelopes
+    for (const envelopeId of envelopesId) {
+      const envelopeIndex = envelopes.findIndex((env) => env.id === envelopeId);
+      if (envelopeIndex === -1) continue;
+
+      const amountPerEnvelope = envelopesId.length
+        ? Number(amount) / envelopesId.length
+        : Number(amount);
+
+      // Update each envelopes allocated and balance amount
+      const current = envelopes[envelopeIndex];
+      const allocatedAmount = current.allocatedAmount + amountPerEnvelope;
+      const balance = allocatedAmount - current.spentAmount;
+
+      /**@type {Envelope} */
+      const updatedEnvelope = {
+        ...current,
+        allocatedAmount: allocatedAmount,
+        balance: balance,
+        updatedAt: new Date().toISOString(),
+      };
+
+      /** @type {EnvelopeQuery} */
+      const updateQuery = await distributionQuery.query(
+        "UPDATE envelopes SET allocated_amount = $1, balance = $2, updated_at = NOW() WHERE id = $3 RETURNING *",
+        [updatedEnvelope.allocatedAmount, updatedEnvelope.balance, envelopeId],
+      );
+
+      envelopes[envelopeIndex] = new EnvelopeDto(updateQuery.rows[0]);
+    }
+
+    return res.status(201).json(
+      new SuccessResponseDto({
+        message: `An amount of ${amount} has been successfully distributed to envelopes.`,
+        data: envelopes,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  } finally {
+    distributionQuery.release();
+  }
+};
+
 module.exports = {
   getAllEnvelopes,
   createEnvelope,
   deleteEnvelope,
   updateEnvelope,
   getEnvelope,
+  distributeFunds,
 };

@@ -6,6 +6,7 @@ const {
   createEnvelopeValidator,
   envelopeIdValidator,
   updateEnvelopeValidator,
+  distributeFundsValidator,
 } = require("../validators/envelopes.validators");
 const validateResult = require("../middlewares/validateRequest.middleware");
 
@@ -118,53 +119,11 @@ envelopesRouter.post("/transfer/:fromId/:toId", (req, res) => {
   }
 });
 
-envelopesRouter.post("/distribute", (req, res) => {
-  /**
-   * Distribute envelopes request data
-   *
-   * @typedef {Object} DistributeEnvelopeData
-   * @property {number} amount - Amount to distribute
-   * @property {Array<string>} envelopesId - Envelopes ids to distribute
-   */
-  /** @type {DistributeEnvelopeData} - Amount to distribute */
-  const data = req.body;
-  const { amount, envelopesId } = data;
-
-  if (
-    amount === undefined ||
-    amount === 0 ||
-    envelopes === undefined ||
-    envelopes.length === 0
-  ) {
-    return res.status(400).send("Amount and envelopes must be provided.");
-  }
-
-  envelopesId.forEach((envelopeId) => {
-    const envelopeToBeUpatedIndex = envelopes.findIndex(
-      (envelope) => envelope.id === envelopeId,
-    );
-    if (envelopeToBeUpatedIndex === -1) return;
-    const amountToDistributeEach =
-      envelopesId.length > 0 ? amount / envelopesId.length : amount;
-    /**@type {Envelope} */
-    const updatedEnvelope = {
-      ...envelopes[envelopeToBeUpatedIndex],
-      allocatedAmount:
-        envelopes[envelopeToBeUpatedIndex].allocatedAmount +
-        amountToDistributeEach,
-      balance:
-        envelopes[envelopeToBeUpatedIndex].allocatedAmount +
-        amountToDistributeEach -
-        envelopes[envelopeToBeUpatedIndex].spentAmount,
-      updatedAt: new Date().toISOString(),
-    };
-    envelopes[envelopeToBeUpatedIndex] = updatedEnvelope;
-    res
-      .status(201)
-      .send(
-        `An amount of ${amount} has been successfully distributed to envelopes.`,
-      );
-  });
-});
+envelopesRouter.post(
+  "/distribute",
+  distributeFundsValidator,
+  validateResult,
+  envelopesController.distributeFunds,
+);
 
 module.exports = envelopesRouter;
