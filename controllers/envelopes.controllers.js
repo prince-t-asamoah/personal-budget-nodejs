@@ -7,7 +7,7 @@ const { EnvelopeDto } = require("../dtos/envelope.dtos");
  * @typedef {import('../types/controller.types').Controller}  Controller
  * @typedef {import('../types/envelope.types').Envelope} Envelope
  * @typedef {import('pg').QueryResult<Envelope>} EnvelopeQuery
- * 
+ *
  */
 
 /**
@@ -274,6 +274,85 @@ const distributeFunds = async (req, res, next) => {
   }
 };
 
+/**
+ *  Transfer funds from one ennvelope to another
+ * @type {Controller}
+ *
+ */
+const transferFunds = async (req, res, next) => {
+  const { fromId, toId } = req.params;
+  const transferAmount = Number(req.body.amount);
+  const userId = req.session.user.id;
+
+  const transferQuery = await db.connect();
+
+  try {
+    // Check if budget envelopes transfer from and to exist
+    /** @type {EnvelopeQuery} */
+    const searchQuery = await transferQuery.query(
+      "SELECT * FROM envelopes WHERE user_id = $1 AND id IN ($2, $3)",
+      [userId, fromId, toId],
+    );
+
+    const envelopesById = searchQuery.rows.reduce((acc, row) => {
+      acc[row.id] = new EnvelopeDto(row);
+      return acc;
+    }, {});
+
+    const envelopeTransferFrom = envelopesById[fromId];
+    if (!envelopeTransferFrom) {
+      throw new EnvelopeError(
+        `Transfer from envelope with id: ${fromId} not found`,
+        404,
+      );
+    }
+
+    const envelopeTransferTo = envelopesById[toId];
+    if (!envelopeTransferTo) {
+      throw new EnvelopeError(
+        `Transfer to envelope with id: ${toId} not found`,
+        404,
+      );
+    }
+
+    if (envelopeTransferFrom.balance < transferAmount) {
+      throw new EnvelopeError(
+        "Envelope transfer from amount must be greater than transfer amount",
+      );
+    }
+
+    /** @type {EnvelopeQuery} */
+    const updateQuery = await transferQuery.query(
+      `UPDATE envelopes AS m 
+      SET
+      allocated_amount = m.allocated_amount + c.delta,
+      balance = (m.allocated_amount + c.delta) - m.spent_amount,
+      updated_at = NOW()
+      FROM (VALUES($1::uuid, $2::numeric), ($3::uuid, $4::numeric))
+      AS c(id, delta)
+      WHERE m.user_id = $5 AND c.id = m.id RETURNING m.*`,
+      [fromId, -transferAmount, toId, transferAmount, userId],
+    );
+
+    if (updateQuery.rows.length !== 2)
+      throw new EnvelopeError("Envelopes funds transfer failed");
+
+    return res.status(201).json(
+      new SuccessResponseDto({
+        message: "Funds transfered successful",
+        data: [
+          new EnvelopeDto(updateQuery.rows[0]),
+          new EnvelopeDto(updateQuery.rows[1]),
+        ],
+      }),
+    );
+  } catch (error) {
+    next(error);
+  } finally {
+    transferQuery.release();
+  }
+};
+
 module.exports = {
   getAllEnvelopes,
   createEnvelope,
@@ -281,4 +360,5 @@ module.exports = {
   updateEnvelope,
   getEnvelope,
   distributeFunds,
+  transferFunds,
 };
