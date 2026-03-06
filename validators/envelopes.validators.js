@@ -68,9 +68,27 @@ const distributeFundsValidator = [
     .withMessage("Envelopes id must be a non-empty array"),
 ];
 
+const transferFundsValidator = [
+  param("fromId")
+    .exists({ values: "undefined" })
+    .withMessage("Transfer from id is required")
+    .isUUID()
+    .withMessage("Id must be a UUID"),
+  param("toId")
+    .exists({ values: "undefined" })
+    .withMessage("Transfer to id is required")
+    .isUUID()
+    .withMessage("Id must be a UUID"),
+  body("amount")
+    .exists({ values: "undefined" })
+    .withMessage("Transfer amount is required")
+    .isNumeric()
+    .withMessage("Amount must be a number"),
+];
 module.exports = {
   createEnvelopeValidator,
   envelopeIdValidator,
   updateEnvelopeValidator,
-  distributeFundsValidator
+  distributeFundsValidator,
+  transferFundsValidator
 };

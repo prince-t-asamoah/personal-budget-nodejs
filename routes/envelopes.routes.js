@@ -7,6 +7,7 @@ const {
   envelopeIdValidator,
   updateEnvelopeValidator,
   distributeFundsValidator,
+  transferFundsValidator,
 } = require("../validators/envelopes.validators");
 const validateResult = require("../middlewares/validateRequest.middleware");
 
@@ -56,6 +57,8 @@ envelopesRouter.delete(
 
 envelopesRouter.post(
   "/transfer/:fromId/:toId",
+  transferFundsValidator,
+  validateResult,
   envelopesController.transferFunds,
 );
 
