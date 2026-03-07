@@ -353,6 +353,100 @@ const transferFunds = async (req, res, next) => {
   }
 };
 
+/**
+ * Create an expense from an envelope
+ *
+ *  @type {Controller} */
+const expenseFunds = async (req, res, next) => {
+  /**
+   * @typedef {object} ExpenseRequestData
+   * @property {number} amount - Expense amount
+   * @property {string} description - Expense description
+   * @property {string} notes - Expense notes (optional)
+   */
+
+  /** @type {ExpenseRequestData} */
+  const { amount, description, notes } = req.body;
+  const userId = req.session.user.id;
+  const envelopeId = req.params.envelopeId;
+
+  const dbClient = await db.connect();
+
+  try {
+    await dbClient.query("BEGIN");
+
+    // Get envelopes to be updated
+    /** @type {EnvelopeQuery} */
+    const selectQuery = await dbClient.query(
+      `SELECT * FROM envelopes WHERE user_id = $1 AND id = $2`,
+      [userId, envelopeId],
+    );
+
+    if (!selectQuery.rows[0]) {
+      throw new EnvelopeError(
+        `Envelope with id: ${envelopeId} does not exist.`,
+      );
+    }
+
+    /** @type {Envelope} */
+    const envelope = new EnvelopeDto(selectQuery.rows[0]);
+
+    const expenseAmount = Number(amount);
+    const currentAllocatedAmount = envelope.allocatedAmount;
+    const updatedSpentAmount = envelope.spentAmount + expenseAmount;
+    const updatedBalanceAmount = currentAllocatedAmount - updatedSpentAmount;
+
+    // Create a transaction record for expense
+    await dbClient.query(
+      `INSERT INTO
+      transactions (envelope_id, type, amount, currency, balance_after, description, notes)
+      VALUES($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        envelope.id,
+        "EXPENSE",
+        expenseAmount,
+        envelope.currency,
+        updatedBalanceAmount,
+        description,
+        notes,
+      ],
+    );
+
+    // Update envelope with  spent amount and updated at
+    /** @type {EnvelopeQuery} */
+    const updateQuery = await dbClient.query(
+      "UPDATE envelopes SET allocated_amount = $1, spent_amount = $2, balance = $3, updated_at = NOW() WHERE id = $4 RETURNING *",
+      [
+        currentAllocatedAmount,
+        updatedSpentAmount,
+        updatedBalanceAmount,
+        envelopeId,
+      ],
+    );
+
+    if (!updateQuery.rows[0]) {
+      throw new EnvelopeError(`Envelope with id: ${envelopeId} update failed`);
+    }
+
+    await dbClient.query("COMMIT");
+
+    /** @type {Envelope} */
+    const updatedEnvelope = updateQuery.rows[0];
+
+    return res.status(201).json(
+      new SuccessResponseDto({
+        message: "Envelope expense successful",
+        data: new EnvelopeDto(updatedEnvelope),
+      }),
+    );
+  } catch (error) {
+    dbClient.query("ROLLBACK");
+    next(error);
+  } finally {
+    dbClient.release();
+  }
+};
+
 module.exports = {
   getAllEnvelopes,
   createEnvelope,
@@ -361,4 +455,5 @@ module.exports = {
   getEnvelope,
   distributeFunds,
   transferFunds,
+  expenseFunds,
 };

@@ -8,6 +8,7 @@ const {
   updateEnvelopeValidator,
   distributeFundsValidator,
   transferFundsValidator,
+  expenseFundsValidator,
 } = require("../validators/envelopes.validators");
 const validateResult = require("../middlewares/validateRequest.middleware");
 
@@ -60,6 +61,14 @@ envelopesRouter.post(
   transferFundsValidator,
   validateResult,
   envelopesController.transferFunds,
+);
+
+envelopesRouter.post(
+  "/:envelopeId/expense",
+  envelopeIdValidator,
+  expenseFundsValidator,
+  validateResult,
+  envelopesController.expenseFunds,
 );
 
 envelopesRouter.post(
