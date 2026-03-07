@@ -24,11 +24,28 @@ const validationsBody = {
   balance: body("balance")
     .exists({ values: "undefined" })
     .withMessage("Balance amount is required")
-    .isInt({ min: 0 })
-    .withMessage("Balance amount cannot be less than or equal to zero")
-    .isNumeric()
-    .withMessage("Balance amount must be a number"),
+    .matches(/^[0-9]+(?:\.[0-9]{1,2})?$/)
+    .withMessage("Balance amount must be a valid number with up to two decimal places")
+    .isFloat({ min: 0.01 })
+    .withMessage("Balance amount must be greater than zero"),
+  amount: body("amount")
+    .exists({ values: "undefined" })
+    .withMessage("Amount is required")
+    .matches(/^[0-9]+(?:\.[0-9]{1,2})?$/)
+    .withMessage("Amount must be a valid number with up to two decimal places")
+    .isFloat({ min: 0.01 })
+    .withMessage("Amount must be greater than zero"),
+  description: body("description")
+    .exists({ values: "undefined" })
+    .withMessage("Description is required")
+    .notEmpty()
+    .withMessage("Description cannot be empty")
+    .isString()
+    .withMessage("Description must be a string"),
+  notes: body("notes").isString().withMessage("Notes must be a string"),
 };
+
+const validationsParams = {};
 
 const envelopeIdValidator = [
   param("envelopeId")
@@ -57,10 +74,10 @@ const distributeFundsValidator = [
   body("amount")
     .exists({ values: "undefined" })
     .withMessage("Distributed amount is required")
-    .isInt({ min: 0 })
-    .withMessage("Distributed amount cannot be less than or equal to zero")
-    .isNumeric()
-    .withMessage("Distributed amount must be a number"),
+    .matches(/^[0-9]+(?:\.[0-9]{1,2})?$/)
+    .withMessage("Distributed amount must be a valid number with up to two decimal places")
+    .isFloat({ min: 0.01 })
+    .withMessage("Distributed amount must be greater than zero"),
   body("envelopesId")
     .exists({ values: "undefined" })
     .withMessage("Envelopes id is required")
@@ -82,13 +99,23 @@ const transferFundsValidator = [
   body("amount")
     .exists({ values: "undefined" })
     .withMessage("Transfer amount is required")
-    .isNumeric()
-    .withMessage("Amount must be a number"),
+    .matches(/^[0-9]+(?:\.[0-9]{1,2})?$/)
+    .withMessage("Transfer amount must be a valid number with up to two decimal places")
+    .isFloat({ min: 0.01 })
+    .withMessage("Transfer amount must be greater than zero"),
 ];
+
+const expenseFundsValidator = [
+  validationsBody.amount,
+  validationsBody.description,
+  validationsBody.notes
+];
+
 module.exports = {
   createEnvelopeValidator,
   envelopeIdValidator,
   updateEnvelopeValidator,
   distributeFundsValidator,
-  transferFundsValidator
+  transferFundsValidator,
+  expenseFundsValidator
 };
