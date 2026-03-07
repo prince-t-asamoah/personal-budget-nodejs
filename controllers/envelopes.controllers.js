@@ -378,7 +378,7 @@ const expenseFunds = async (req, res, next) => {
     // Get envelopes to be updated
     /** @type {EnvelopeQuery} */
     const selectQuery = await dbClient.query(
-      `SELECT * FROM envelopes WHERE user_id = $1 AND id = $2`,
+      `SELECT * FROM envelopes WHERE user_id = $1 AND id = $2 FOR UPDATE`,
       [userId, envelopeId],
     );
 
@@ -435,7 +435,7 @@ const expenseFunds = async (req, res, next) => {
 
     return res.status(201).json(
       new SuccessResponseDto({
-        message: "Envelope expense successful",
+        message: "Expense transaction successful",
         data: new EnvelopeDto(updatedEnvelope),
       }),
     );
