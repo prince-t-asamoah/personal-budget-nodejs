@@ -50,27 +50,55 @@ const getAllEnvelopes = async (req, res, next) => {
  */
 const createEnvelope = async (req, res, next) => {
   /**@type {Envelope} */
-  const { name, currency, allocatedAmount, spentAmount } = req.body;
+  const { name, currency, allocatedAmount, spentAmount, notes } = req.body;
 
+  /** @type {string} */
   const userId = req.session.user.id;
   const balance = allocatedAmount - spentAmount || 0;
 
+  const dbClient = await db.connect();
+
   try {
+    await dbClient.query("BEGIN");
+
+    // Create a new envelope
     /** @type {EnvelopeQuery} */
-    const query = await db.query(
-      `INSERT INTO envelopes(name, currency, allocated_amount, spent_amount, balance, user_id)
-         VALUES($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [name, currency, allocatedAmount, spentAmount, balance, userId],
+    const newEnvelopeQuery = await dbClient.query(
+      `INSERT INTO envelopes(name, currency, allocated_amount, spent_amount, balance, user_id, notes)
+         VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [name, currency, allocatedAmount, spentAmount, balance, userId, notes],
     );
 
-    const data = query.rows[0];
+    /** @type {Envelope} */
+    const envelope = new EnvelopeDto(newEnvelopeQuery.rows[0]);
+
+    if (!envelope) throw new EnvelopeError("Creating new envelope failed");
+
+    // Create a transaction record for new envelope
+    await dbClient.query(
+      `INSERT INTO
+      transactions (envelope_id, type, amount, currency, balance_after, description, notes)
+      VALUES($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        envelope.id,
+        "INITIAL_ALLOCATION",
+        allocatedAmount,
+        envelope.currency,
+        envelope.balance,
+        "Initial Allocation",
+        notes,
+      ],
+    );
+
+    await dbClient.query("COMMIT");
 
     return res.status(201).json(
       new SuccessResponseDto({
-        data: new EnvelopeDto(data),
+        data: envelope,
       }),
     );
   } catch (error) {
+    dbClient.query("ROLLBACK");
     next(error);
   }
 };

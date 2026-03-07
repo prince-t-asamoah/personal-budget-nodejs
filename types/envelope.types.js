@@ -8,6 +8,7 @@
  * @property {number} spentAmount - Amount already spent
  * @property {number} balance - Allocated amount - Spent amount
  * @property {string} currency - ISO code e.g. "GHS", "USD"
+ * @property {string} notes - Notes (Optional)
  * @property {string} createdAt - ISO timestamp
  * @property {string} updatedAt - ISO timestamp
  *

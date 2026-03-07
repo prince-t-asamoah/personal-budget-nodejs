@@ -1,4 +1,5 @@
 const { body, param } = require("express-validator");
+
 const validationsBody = {
   name: body("name")
     .exists({ values: "undefined" })
@@ -45,8 +46,6 @@ const validationsBody = {
   notes: body("notes").isString().withMessage("Notes must be a string"),
 };
 
-const validationsParams = {};
-
 const envelopeIdValidator = [
   param("envelopeId")
     .exists()
@@ -61,6 +60,7 @@ const createEnvelopeValidator = [
   validationsBody.name,
   validationsBody.currency,
   validationsBody.allocatedAmount,
+  validationsBody.notes
 ];
 
 const updateEnvelopeValidator = [
