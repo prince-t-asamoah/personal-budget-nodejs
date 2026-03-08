@@ -81,7 +81,7 @@ const createEnvelope = async (req, res, next) => {
       VALUES($1, $2, $3, $4, $5, $6, $7)`,
       [
         envelope.id,
-        "INITIAL_ALLOCATION",
+        "FUNDING",
         allocatedAmount,
         envelope.currency,
         envelope.balance,
