@@ -6,12 +6,11 @@ BEGIN
         WHERE typname = 'transaction_type'
     ) THEN
         CREATE TYPE transaction_type AS ENUM (
-            'INITIAL_ALLOCATION',
-            'FUNDING',
-            'EXPENSE',
-            'TRANSFER_IN',
-            'TRANSFER_OUT',
-            'ADJUSTMENT'
+            'funding',
+            'expense',
+            'transfer_in',
+            'transfer_out',
+            'adjustment'
         );
     END IF;
 END $$;
