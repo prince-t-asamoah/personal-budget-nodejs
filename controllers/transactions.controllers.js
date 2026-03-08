@@ -22,6 +22,7 @@ const getAllTransactions = async (req, res, next) => {
     FROM transactions t
     JOIN envelopes e ON t.envelope_id = e.id
     WHERE e.user_id = $1
+    AND e.deleted_at IS NULL
     ORDER BY t.created_at DESC LIMIT 10`,
       [userId],
     );
