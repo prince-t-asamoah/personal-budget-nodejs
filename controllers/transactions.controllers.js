@@ -18,7 +18,7 @@ const getAllTransactions = async (req, res, next) => {
   try {
     const query = await db.query(
       `
-    SELECT *
+    SELECT t.*, e.name AS envelope_name
     FROM transactions t
     JOIN envelopes e ON t.envelope_id = e.id
     WHERE e.user_id = $1

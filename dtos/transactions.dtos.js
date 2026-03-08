@@ -10,6 +10,7 @@ class TransactionDto extends BaseDto {
     description,
     notes,
     reference_id,
+    envelope_name,
     created_at,
   }) {
     super();
@@ -29,6 +30,8 @@ class TransactionDto extends BaseDto {
     this.referenceId = reference_id;
     /**@type {string} */
     this.currency = currency;
+    /**@type {string} */
+    this.envelopeName = envelope_name;
     /**@type {string} */
     this.createdAt = created_at;
     this.filterUndefined();
