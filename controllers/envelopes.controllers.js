@@ -50,7 +50,8 @@ const getAllEnvelopes = async (req, res, next) => {
  */
 const createEnvelope = async (req, res, next) => {
   /**@type {Envelope} */
-  const { name, currency, allocatedAmount, spentAmount, notes } = req.body;
+  const { name, currency, allocatedAmount, spentAmount, category, notes } =
+    req.body;
 
   /** @type {string} */
   const userId = req.session.user.id;
@@ -64,9 +65,18 @@ const createEnvelope = async (req, res, next) => {
     // Create a new envelope
     /** @type {EnvelopeQuery} */
     const newEnvelopeQuery = await dbClient.query(
-      `INSERT INTO envelopes(name, currency, allocated_amount, spent_amount, balance, user_id, notes)
-         VALUES($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [name, currency, allocatedAmount, spentAmount, balance, userId, notes],
+      `INSERT INTO envelopes(name, currency, allocated_amount, spent_amount, balance, user_id, category, notes)
+         VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
+      [
+        name,
+        currency,
+        allocatedAmount,
+        spentAmount,
+        balance,
+        userId,
+        category,
+        notes,
+      ],
     );
 
     /** @type {Envelope} */

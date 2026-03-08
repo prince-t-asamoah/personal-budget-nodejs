@@ -1,4 +1,5 @@
 const { body, param } = require("express-validator");
+const { ENVELOPE_CATEGORY_TYPES } = require("../types/envelope.types");
 
 const validationsBody = {
   name: body("name")
@@ -15,6 +16,15 @@ const validationsBody = {
     .withMessage("Currency cannot be empty")
     .isString()
     .withMessage("Currency must be a string"),
+  category: body("category")
+    .exists({ values: "undefined" })
+    .withMessage("Category is required")
+    .notEmpty()
+    .withMessage("Category cannot be empty")
+    .isString()
+    .withMessage("Category must be a string")
+    .isIn(Object.values(ENVELOPE_CATEGORY_TYPES))
+    .withMessage("Category is invalid"),
   allocatedAmount: body("allocatedAmount")
     .exists({ values: "undefined" })
     .withMessage("Allocated amount is required")
@@ -59,6 +69,7 @@ const envelopeIdValidator = [
 const createEnvelopeValidator = [
   validationsBody.name,
   validationsBody.currency,
+  validationsBody.category,
   validationsBody.allocatedAmount,
   validationsBody.notes
 ];
