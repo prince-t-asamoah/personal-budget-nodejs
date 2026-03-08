@@ -1,5 +1,9 @@
 /**
  * @typedef {import('../types/controller.types').Controller}  Controller
+ * @typedef {import('../types/transactions.types').Transaction} Transaction
+ * @typedef {import('../types/transactions.types').CreateTransactionInput} CreateTransactionInput
+ * @typedef {import('../types/transactions.types').UpdateTransactionInput} UpdateTransactionInput
+ * @typedef {import('pg').QueryResult<Transaction>} TransactionQuery
  *
  */
 
@@ -16,6 +20,7 @@ const getAllTransactions = async (req, res, next) => {
   const userId = req.session.user.id;
 
   try {
+    /** @type {TransactionQuery} */
     const query = await db.query(
       `
     SELECT t.*, e.name AS envelope_name
@@ -50,6 +55,7 @@ const getEnvelopeTransactions = async (req, res, next) => {
   const envelopeId = req.params.envelopeId;
 
   try {
+    /** @type {TransactionQuery} */
     const query = await db.query(
       `SELECT *
     FROM transactions
