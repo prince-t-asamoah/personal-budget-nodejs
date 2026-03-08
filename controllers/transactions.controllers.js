@@ -10,7 +10,7 @@ const { TransactionDto } = require("../dtos/transactions.dtos");
 /**
  * Get all transactions
  * @type {Controller}
- *
+
  */
 const getAllTransactions = async (req, res, next) => {
   const userId = req.session.user.id;
@@ -30,7 +30,7 @@ const getAllTransactions = async (req, res, next) => {
       (transaction) => new TransactionDto(transaction),
     );
 
-    res.status(200).json(
+    return res.status(200).json(
       new SuccessResponseDto({
         message: "Fetching all transactions successful",
         data: transactions,
@@ -41,6 +41,37 @@ const getAllTransactions = async (req, res, next) => {
   }
 };
 
+/**
+ * Get envelope transactions
+ * @type {Controller}
+ */
+const getEnvelopeTransactions = async (req, res, next) => {
+  const envelopeId = req.params.envelopeId;
+
+  try {
+    const query = await db.query(
+      `SELECT *
+    FROM transactions
+    WHERE envelope_id = $1
+    ORDER BY created_at DESC;`,
+      [envelopeId],
+    );
+    const transactions = query.rows.map(
+      (transaction) => new TransactionDto(transaction),
+    );
+
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message: "Fetching envelope transactions successful",
+        data: transactions,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getAllTransactions,
+  getEnvelopeTransactions,
 };
