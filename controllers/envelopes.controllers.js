@@ -2,6 +2,7 @@ const db = require("../config/db.config");
 const { SuccessResponseDto } = require("../dtos/response.dtos");
 const EnvelopeError = require("../errors/EnvelopeError");
 const { EnvelopeDto } = require("../dtos/envelope.dtos");
+const { TRANSACTION_TYPES } = require("../types/transactions.types");
 
 /**
  * @typedef {import('../types/controller.types').Controller}  Controller
@@ -91,7 +92,7 @@ const createEnvelope = async (req, res, next) => {
       VALUES($1, $2, $3, $4, $5, $6, $7)`,
       [
         envelope.id,
-        "FUNDING",
+        TRANSACTION_TYPES.FUNDING,
         allocatedAmount,
         envelope.currency,
         envelope.balance,
@@ -441,7 +442,7 @@ const expenseFunds = async (req, res, next) => {
       VALUES($1, $2, $3, $4, $5, $6, $7)`,
       [
         envelope.id,
-        "EXPENSE",
+        TRANSACTION_TYPES.EXPENSE,
         expenseAmount,
         envelope.currency,
         updatedBalanceAmount,
