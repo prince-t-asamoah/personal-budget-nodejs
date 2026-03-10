@@ -326,10 +326,11 @@ const transferFunds = async (req, res, next) => {
   const transferQuery = await db.connect();
 
   try {
+    await transferQuery.query("BEGIN");
     // Check if budget envelopes transfer from and to exist
     /** @type {EnvelopeQuery} */
     const searchQuery = await transferQuery.query(
-      "SELECT * FROM envelopes WHERE user_id = $1 AND id IN ($2, $3)",
+      "SELECT * FROM envelopes WHERE user_id = $1 AND id IN ($2, $3) FOR UPDATE",
       [userId, fromId, toId],
     );
 
@@ -374,7 +375,37 @@ const transferFunds = async (req, res, next) => {
     );
 
     if (updateQuery.rows.length !== 2)
-      throw new EnvelopeError("Envelopes funds transfer failed");
+      throw new EnvelopeError("Envelopes update query failed");
+
+    const updatedFromEnvelope = updateQuery.rows[0];
+    const updatedToEnvelope = updateQuery.rows[1];
+
+    await transferQuery.query(
+      `INSERT INTO transactions (envelope_id, type, amount, currency, balance_after, description, notes, reference_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8), ($9, $10, $11, $12, $13, $14, $15, $16)`,
+      [
+        // Transfer from Envelope
+        updatedFromEnvelope.id,
+        TRANSACTION_TYPES.TRANSFER_OUT,
+        transferAmount,
+        updatedFromEnvelope.currency,
+        updatedFromEnvelope.balance,
+        `Funds transfer to ${updatedToEnvelope.id}`,
+        updatedFromEnvelope.notes,
+        updatedToEnvelope.id,
+        // Transfer to Envelope
+        updatedToEnvelope.id,
+        TRANSACTION_TYPES.TRANSFER_IN,
+        transferAmount,
+        updatedToEnvelope.currency,
+        updatedToEnvelope.balance,
+        `Funds transfer from ${updatedFromEnvelope.id}`,
+        updatedToEnvelope.notes,
+        updatedFromEnvelope.id,
+      ],
+    );
+
+    await transferQuery.query("COMMIT");
 
     return res.status(201).json(
       new SuccessResponseDto({
@@ -386,6 +417,7 @@ const transferFunds = async (req, res, next) => {
       }),
     );
   } catch (error) {
+    await transferQuery.query("ROLLBACK");
     next(error);
   } finally {
     transferQuery.release();
