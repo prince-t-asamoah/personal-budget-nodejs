@@ -254,16 +254,18 @@ const distributeFunds = async (req, res, next) => {
       .map((_, index) => `$${index + 2}`)
       .join(",");
 
+    await distributionQuery.query("BEGIN");
+
     /** @type {EnvelopeQuery} */
     const selectEnvelopesQuery = await distributionQuery.query(
-      `SELECT * FROM envelopes WHERE user_id = $1 AND id IN (${dbPlaceholders})`,
+      `SELECT * FROM envelopes WHERE user_id = $1 AND id IN (${dbPlaceholders}) FOR UPDATE`,
       [userId, ...envelopesId],
     );
 
     /** @type {Array<Envelope>} */
     const selectQueryEnvelopes = selectEnvelopesQuery.rows;
 
-    if (selectQueryEnvelopes && selectQueryEnvelopes.length === 0) {
+    if (selectQueryEnvelopes?.length === 0) {
       throw new EnvelopeError("No envelopes to distribute funds");
     }
 
@@ -298,7 +300,26 @@ const distributeFunds = async (req, res, next) => {
       );
 
       envelopes[envelopeIndex] = new EnvelopeDto(updateQuery.rows[0]);
+      const distributedEnvelope = envelopes[envelopeIndex];
+
+      // Create transaction record for each distribution
+      await distributionQuery.query(
+        `INSERT INTO transactions (envelope_id, type, amount, currency, balance_after, description, notes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          distributedEnvelope.id,
+          TRANSACTION_TYPES.FUNDING,
+          amountPerEnvelope,
+          distributedEnvelope.currency,
+          distributedEnvelope.balance,
+          "Distributed funds",
+          distributedEnvelope.notes,
+        ],
+      );
     }
+
+    // Commit changes permanently
+    await distributionQuery.query("COMMIT");
 
     return res.status(201).json(
       new SuccessResponseDto({
@@ -307,6 +328,7 @@ const distributeFunds = async (req, res, next) => {
       }),
     );
   } catch (error) {
+    await distributionQuery.query("ROLLBACK");
     next(error);
   } finally {
     distributionQuery.release();
