@@ -1,10 +1,10 @@
-const { findPackageJSON } = require("module");
 const db = require("../config/db.config");
 const { SignupDto, LoginDto } = require("../dtos/auth.dtos");
 const { SuccessResponseDto } = require("../dtos/response.dtos");
 const { UserDto } = require("../dtos/users.dto");
 const { LoginError, SignupError, LogoutError } = require("../errors/AuthError");
 const { hashPassword, verifyPassword } = require("../util/password.util");
+const { sendVerificationEmail } = require("../services/email.service");
 
 /**
  * @typedef {import('../types/controller.types').Controller}  Controller
@@ -42,24 +42,34 @@ const signup = async (req, res, next) => {
     }
 
     // Save new user fullname, email and hashed password into database
+    let user;
+    let verification_token;
+
     try {
+      verification_token = require("node:crypto")
+        .randomBytes(32)
+        .toString("hex");
+
       /**@type {DatabaseQuery} */
       const newUserQueryResult = await signupClient.query(
-        `INSERT INTO users (full_name, email, password_hash)
-         VALUES($1, $2, $3)
+        `INSERT INTO users (full_name, email, password_hash, is_verified, verification_token, token_expires_at)
+         VALUES($1, $2, $3, $4, $5, NOW() + INTERVAL '1 hour')
          RETURNING id, full_name, email, created_at, updated_at`,
-        [userData.fullname, userData.email, hashedPassword],
+        [
+          userData.fullname,
+          userData.email,
+          hashedPassword,
+          false,
+          verification_token,
+        ],
       );
 
       /** @type {UserDto} */
-      const newData = newUserQueryResult.rows[0];
+      const newUserData = newUserQueryResult.rows[0];
 
-      return res.json(
-        new SuccessResponseDto({
-          message: "User signup successful",
-          data: new UserDto(newData),
-        }),
-      );
+      if (!newUserData)
+        throw new SignupError("Saving new user to database failed.", 500);
+      user = new UserDto(newUserData);
     } catch (error) {
       throw new SignupError(
         "Saving new user details to database failed.",
@@ -67,6 +77,26 @@ const signup = async (req, res, next) => {
         { cause: error },
       );
     }
+
+    // Send activation email
+    try {
+      await sendVerificationEmail(
+        user.email,
+        user.fullName,
+        verification_token,
+      );
+    } catch (error) {
+      throw new SignupError("Sending activation email failed.", 500, {
+        cause: error,
+      });
+    }
+
+    return res.json(
+      new SuccessResponseDto({
+        message: "Check your email to verify your account email.",
+        data: user,
+      }),
+    );
   } catch (error) {
     next(error);
   } finally {
