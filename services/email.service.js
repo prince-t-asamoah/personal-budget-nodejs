@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const handlebars = require("handlebars");
 const emailClient = require("../config/email.config");
 
-const APP_BASE_URL = `${process.env.APP_API_BASE_URL}/api/v1`;
+const APP_FRONTEND_BASE_URL = `${process.env.APP_API_BASE_URL}/api/v1`;
 
 /**
  * Send email verification email to new signup users
@@ -18,7 +18,7 @@ const sendVerificationEmail = async (email, name, verificationToken) => {
 
   // Compile the handlebar template
   const template = handlebars.compile(templateSource);
-  const verificationLink = `${APP_BASE_URL}/auth/verify-email?code=${verificationToken}`;
+  const verificationLink = `${APP_FRONTEND_BASE_URL}/auth/verify-email?code=${verificationToken}`;
 
   // Render HTML with name, email and verification link
   const html = template({ name, email, verificationLink });
