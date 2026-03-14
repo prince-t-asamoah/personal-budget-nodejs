@@ -25,6 +25,8 @@ if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
+app.set("view engine", "hbs");
+
 app.use("/api/v1", indexRouter);
 
 app.get("/", (_req, res) => {
