@@ -1,4 +1,4 @@
-const { body } = require("express-validator");
+const { body, query } = require("express-validator");
 
 const signupValidator = [
   body("fullname")
@@ -41,7 +41,20 @@ const loginValidator = [
     .withMessage("Password must be at least 12 characters long."),
 ];
 
+const verifyEmailValidator = [
+  query('token')
+    .exists({ values: "undefined" })
+    .withMessage("Token is required")
+    .notEmpty()
+    .withMessage("Token cannot be empty")
+    .isHexadecimal()
+    .withMessage("Token must be a valid hexadecimal string")
+    .isLength({ min: 64, max: 64 })
+    .withMessage("Token must be 64 characters long"),
+];
+
 module.exports = {
   signupValidator,
   loginValidator,
+  verifyEmailValidator
 };

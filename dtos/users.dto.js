@@ -8,6 +8,7 @@
  * @property {string} phone_number - User accocunt phone number
  * @property {string} address_details - User accocunt address details
  * @property {string} profile_image_url - User accocunt profile image url
+ * @property {boolean} is_verified - User accocunt verification status
  * @property {string} created_at - User account created at date
  * @property {string} updated_at - User account update date
  * @property {string} password_hash - User account password hash
@@ -29,6 +30,7 @@ class UserDto {
     address_details,
     profile_image_url,
     password_hash,
+    is_verified,
     created_at,
     updated_at,
   }) {
@@ -39,11 +41,13 @@ class UserDto {
     /** @type {string} */
     this.email = email;
     /** @type {string} */
-     this.phoneNumber = phone_number;
+    this.phoneNumber = phone_number;
     /** @type {string} */
     this.addressDetails = address_details;
     /** @type {string} */
     this.profileImageUrl = profile_image_url;
+    /** @type {boolean} */
+    this.isVerified = is_verified;
     /** @type {string} */
     this.passwordHash = password_hash;
     /** @type {string} */

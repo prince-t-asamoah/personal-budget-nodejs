@@ -24,9 +24,16 @@ class UnAuthorizedError extends BaseError {
   }
 }
 
+class VerifyEmailError extends BaseError {
+  constructor(message, status = 401, options) {
+    super(message, status, options);
+  }
+}
+
 module.exports = {
   LoginError,
   SignupError,
   LogoutError,
   UnAuthorizedError,
+  VerifyEmailError
 };

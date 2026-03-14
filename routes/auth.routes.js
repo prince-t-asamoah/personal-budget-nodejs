@@ -6,6 +6,7 @@ const authController = require("../controllers/auth.controllers");
 const {
   signupValidator,
   loginValidator,
+  verifyEmailValidator,
 } = require("../validators/auth.validators");
 
 authRouter.post(
@@ -13,6 +14,13 @@ authRouter.post(
   signupValidator,
   validateRequest,
   authController.signup,
+);
+
+authRouter.get(
+  "/verify-email",
+  verifyEmailValidator,
+  validateRequest,
+  authController.verifyEmail,
 );
 
 authRouter.post(

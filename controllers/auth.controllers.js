@@ -2,7 +2,12 @@ const db = require("../config/db.config");
 const { SignupDto, LoginDto } = require("../dtos/auth.dtos");
 const { SuccessResponseDto } = require("../dtos/response.dtos");
 const { UserDto } = require("../dtos/users.dto");
-const { LoginError, SignupError, LogoutError } = require("../errors/AuthError");
+const {
+  LoginError,
+  SignupError,
+  LogoutError,
+  VerifyEmailError,
+} = require("../errors/AuthError");
 const { hashPassword, verifyPassword } = require("../util/password.util");
 const { sendVerificationEmail } = require("../services/email.service");
 
@@ -41,15 +46,18 @@ const signup = async (req, res, next) => {
       throw new SignupError("Password hashing failed.", 500, { cause: error });
     }
 
-    // Save new user fullname, email and hashed password into database
+    /** @type {UserDto} */
     let user;
+    /** @type {string} */
     let verification_token;
 
     try {
+      // Generate verification token using crypto
       verification_token = require("node:crypto")
         .randomBytes(32)
         .toString("hex");
 
+      // Save new user fullname, email and hashed password into database
       /**@type {DatabaseQuery} */
       const newUserQueryResult = await signupClient.query(
         `INSERT INTO users (full_name, email, password_hash, is_verified, verification_token, token_expires_at)
@@ -101,6 +109,57 @@ const signup = async (req, res, next) => {
     next(error);
   } finally {
     signupClient.release();
+  }
+};
+
+/**
+ * Verify new users to activate account
+ *
+ * @type {Controller}
+ */
+const verifyEmail = async (req, res, next) => {
+  const token = req.query.token;
+  const verifyEmailClient = await db.connect();
+
+  try {
+    await verifyEmailClient.query("BEGIN");
+
+    // Check if user with verification token exist
+    const selectQuery = await db.query(
+      `SELECT * FROM users WHERE verification_token = $1 AND token_expires_at > NOW() FOR UPDATE`,
+      [token],
+    );
+
+    if (!selectQuery.rows[0]) {
+      throw new VerifyEmailError(
+        `User verification token expired or does not exist`,
+        404,
+      );
+    }
+
+    // Update user verification to true to activate acount
+    await db.query(
+      `UPDATE users 
+      SET is_verified=$1, 
+      verification_token = NULL, 
+      token_expires_at = NULL 
+      WHERE verification_token = $2`,
+      [true, token],
+    );
+
+    await verifyEmailClient.query("COMMIT");
+
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message:
+          "Email verification successful, login with credentials to access account",
+      }),
+    );
+  } catch (error) {
+    await verifyEmailClient.query("ROLLBACK");
+    next(error);
+  } finally {
+    verifyEmailClient.release();
   }
 };
 
@@ -167,6 +226,7 @@ const login = async (req, res, next) => {
           phoneNumber: userData.phoneNumber,
           addressDetails: userData.addressDetails,
           profileImageUrl: userData.profileImageUrl,
+          isVerified: userData.isVerified,
           createdAt: userData.createdAt,
           updatedAt: userData.updatedAt,
         },
@@ -201,6 +261,7 @@ const logout = (req, res, next) => {
 
 module.exports = {
   signup,
+  verifyEmail,
   login,
   logout,
 };
