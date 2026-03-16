@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS auth_acccounts RENAME TO auth_accounts;
