@@ -15,7 +15,7 @@ BEGIN
     END IF;
 END $$;
 
-CREATE TABLE IF NOT EXISTS auth_acccounts (
+CREATE TABLE IF NOT EXISTS auth_accounts (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     provider auth_provider_type DEFAULT 'local' NOT NULL,
@@ -24,4 +24,4 @@ CREATE TABLE IF NOT EXISTS auth_acccounts (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS auth_provider_user_unique
-ON auth_acccounts(provider, provider_user_id);
+ON auth_accounts(provider, provider_user_id);
