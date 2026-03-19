@@ -32,4 +32,10 @@ authRouter.post(
 
 authRouter.post("/logout", authController.logout);
 
+authRouter.get("/me", authController.currentUser);
+
+authRouter.get("/google", authController.googleOAuth);
+
+authRouter.get("/google/callback", authController.googleoAuthCallback);
+
 module.exports = authRouter;

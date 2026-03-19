@@ -42,7 +42,35 @@ class LoginDto extends BaseDto {
   }
 }
 
+/**
+ * Auth account data object
+ *
+ * @typedef {Object} AuthAccountDto
+ * @property {string} id - Auth account id
+ * @property {string} userId - User id
+ * @property {string} provider - Auth provider type
+ * @property {string} providerUserId - Provider user id
+ * @property {string} createdAt - Created at timestamp
+ */
+class AuthAccountDto extends BaseDto {
+  constructor({ id, user_id, provider, provider_user_id, created_at }) {
+    super();
+    /** @type {string} */
+    this.id = id;
+    /** @type {string} */
+    this.userId = user_id;
+    /** @type {string} */
+    this.provider = provider;
+    /** @type {string} */
+    this.providerUserId = provider_user_id;
+    /** @type {string} */
+    this.createdAt = created_at;
+    this.filterUndefined();
+  }
+}
+
 module.exports = {
   SignupDto,
-  LoginDto
+  LoginDto,
+  AuthAccountDto
 };

@@ -1,3 +1,5 @@
+const crypto = require("node:crypto");
+
 const db = require("../config/db.config");
 const { SignupDto, LoginDto } = require("../dtos/auth.dtos");
 const { SuccessResponseDto } = require("../dtos/response.dtos");
@@ -7,13 +9,21 @@ const {
   SignupError,
   LogoutError,
   VerifyEmailError,
+  UnAuthorizedError,
 } = require("../errors/AuthError");
 const { hashPassword, verifyPassword } = require("../util/password.util");
 const { sendVerificationEmail } = require("../services/email.service");
+const { getGoogleUser } = require("../services/oauth/google.oauth.service");
+const { AUTH_ACCOUNTS_TYPE } = require("../types/auth_accounts.types");
 
 /**
+ *
  * @typedef {import('../types/controller.types').Controller}  Controller
- * @typedef {import('pg').QueryResult} DatabaseQuery
+ * @typedef {import('../types/auth_accounts.types').AuthAccount} AuthAccount
+ * @typedef {import('../types/users.types').User} User
+ * @typedef {import('pg').QueryResult<AuthAccount>} AuthAccountQuery
+ * @typedef {import('pg').QueryResult<User>} UserQuery
+ *
  */
 
 /**
@@ -29,7 +39,7 @@ const signup = async (req, res, next) => {
 
   try {
     // Check if user already exist
-    /**@type {DatabaseQuery} */
+    /**@type {UserQuery} */
     const userExistQueryResult = await signupClient.query(
       "SELECT * FROM users WHERE email = $1",
       [userData.email],
@@ -259,9 +269,175 @@ const logout = (req, res, next) => {
   });
 };
 
+/**
+ * Google OAuth to signup and signin
+ *
+ * @type {Controller}
+ */
+const googleOAuth = (req, res, _next) => {
+  const state = crypto.randomBytes(16).toString("hex");
+
+  req.session.oauthState = state;
+
+  const params = new URLSearchParams({
+    client_id: process.env.GOOGLE_CLIENT_ID,
+    redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+    response_type: "code",
+    scope: "openid profile email",
+    state,
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+};
+
+/**
+ * Resolve user data for an existing Google auth account.
+ *
+ * @param {import('pg').PoolClient} dbClient
+ * @param {AuthAccount} userAuthAccount
+ * @returns {Promise<UserDto>}
+ */
+const getExistingGoogleAuthUser = async (dbClient, userAuthAccount) => {
+  /** @type {UserQuery} */
+  const selectUsersByIdQuery = await dbClient.query(`SELECT * FROM users WHERE id = $1`, [
+    userAuthAccount.user_id,
+  ]);
+
+  if (!selectUsersByIdQuery.rows[0]) {
+    throw new Error("User account linked to Google auth account was not found.");
+  }
+
+  return new UserDto(selectUsersByIdQuery.rows[0]);
+};
+
+/**
+ * Resolve user data by existing email or create and link a new Google OAuth user.
+ *
+ * @param {import('pg').PoolClient} dbClient
+ * @param {import('../services/oauth/google.oauth.service').GoogleUser} googleUserData
+ * @returns {Promise<UserDto>}
+ */
+const createOrLinkGoogleOAuthUser = async (dbClient, googleUserData) => {
+  /** @type {UserQuery} */
+  const selectUsersByEmailQuery = await dbClient.query(
+    `SELECT * FROM users WHERE email = $1`,
+    [googleUserData.email],
+  );
+
+  /** @type {User} */
+  let userDataByEmail = selectUsersByEmailQuery.rows[0];
+
+  if (!userDataByEmail) {
+    /** @type {UserQuery} */
+    const usersInsertQuery = await dbClient.query(
+      `INSERT INTO users (full_name, email, is_verified, verification_token, token_expires_at) 
+       VALUES($1, $2, $3, NULL, NULL) RETURNING *`,
+      [
+        googleUserData.name,
+        googleUserData.email,
+        googleUserData.verified_email,
+      ],
+    );
+
+    userDataByEmail = usersInsertQuery.rows[0];
+    if (!userDataByEmail) {
+      throw new Error("Saving new user data into database failed.");
+    }
+  }
+
+  await dbClient.query(
+    `INSERT INTO auth_accounts (user_id, provider, provider_user_id) VALUES($1, $2, $3)
+     ON CONFLICT(provider, provider_user_id) DO NOTHING;`,
+    [userDataByEmail.id, AUTH_ACCOUNTS_TYPE.GOOGLE, googleUserData.id],
+  );
+
+  return new UserDto(userDataByEmail);
+};
+
+/**
+ * Google OAuth Callback
+ *
+ * @type {Controller}
+ */
+const googleoAuthCallback = async (req, res, next) => {
+  const { code, state } = req.query;
+
+  if (!code) {
+    return next(new UnAuthorizedError("Missing OAuth authorization code.", 400));
+  }
+
+  if (state !== req.session.oauthState) {
+    return next(new UnAuthorizedError("Invalid OAuth state.", 401));
+  }
+
+  // State is single-use to prevent replay attempts.
+  delete req.session.oauthState;
+
+  const dbClient = await db.connect();
+  let transactionStarted = false;
+
+  try {
+    const googleUserData = await getGoogleUser(code);
+    await dbClient.query("BEGIN");
+    transactionStarted = true;
+
+    if (!googleUserData?.id || !googleUserData?.email) {
+      throw new Error("Google OAuth user data fetching failed");
+    }
+
+    // Check if user has authentication account
+    const selectAuthAccountsQuery = await dbClient.query(
+      "SELECT * FROM auth_accounts WHERE provider = $1 AND provider_user_id = $2 FOR UPDATE;",
+      [AUTH_ACCOUNTS_TYPE.GOOGLE, googleUserData.id],
+    );
+    /** @type {AuthAccountQuery} */
+    const userAuthAccount = selectAuthAccountsQuery.rows[0];
+
+    if (userAuthAccount) {
+      req.session.user = await getExistingGoogleAuthUser(dbClient, userAuthAccount);
+    } else {
+      req.session.user = await createOrLinkGoogleOAuthUser(dbClient, googleUserData);
+    }
+
+    await dbClient.query("COMMIT");
+    return res.redirect(`${process.env.APP_FRONTEND_BASE_URL}/app`);
+  } catch (error) {
+    if (transactionStarted) {
+      await dbClient.query("ROLLBACK");
+    }
+    next(error);
+  } finally {
+    dbClient.release();
+  }
+};
+
+/**
+ * Current authenticated user session
+ *
+ * @type {Controller}
+ */
+const currentUser = async (req, res, next) => {
+  try {
+    if (!req.session.user)
+      throw new UnAuthorizedError("No session data for user");
+    const user = req.session.user;
+
+    res.status(200).json(
+      new SuccessResponseDto({
+        message: "User session data retrieved successfully",
+        data: user,
+      }),
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   signup,
   verifyEmail,
   login,
   logout,
+  googleOAuth,
+  googleoAuthCallback,
+  currentUser,
 };

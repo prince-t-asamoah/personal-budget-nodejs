@@ -1,13 +1,17 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
-const path = require("path");
+const path = require("node:path");
 const session = require("express-session");
 const indexRouter = require("./routes/index.routes");
 const sessionConfig = require("./config/session.config");
 const errorHandler = require("./middlewares/errorHandler.middleware");
 
 const app = express();
+
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 
 // Middlewares
 app.use(
@@ -20,10 +24,6 @@ app.use(express.json());
 app.use(morgan("tiny"));
 app.use(express.static(path.join(__dirname, "public")));
 app.use(session(sessionConfig));
-
-if (process.env.NODE_ENV === "production") {
-  app.set("trust proxy", 1);
-}
 
 app.set("view engine", "hbs");
 
