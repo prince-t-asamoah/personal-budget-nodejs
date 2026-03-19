@@ -30,14 +30,17 @@ class SignupDto extends BaseDto {
  * @typedef {Object} LoginDto
  * @property {string} email - User email
  * @property {string} password - User password
+ * @property {boolean} rememberMe - Extend session duration
  */
 class LoginDto extends BaseDto {
-  constructor({ email, password }) {
+  constructor({ email, password, rememberMe = false }) {
     super();
     /** @type {string} */
     this.email = email;
     /** @type {string} */
     this.password = password;
+    /** @type {boolean} */
+    this.rememberMe = Boolean(rememberMe);
     this.filterUndefined();
   }
 }

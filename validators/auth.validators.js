@@ -39,6 +39,11 @@ const loginValidator = [
     .withMessage("Password cannot be empty")
     .isLength({ min: 12 })
     .withMessage("Password must be at least 12 characters long."),
+  body("rememberMe")
+    .optional()
+    .isBoolean()
+    .withMessage("Remember me must be a boolean value")
+    .toBoolean(),
 ];
 
 const verifyEmailValidator = [

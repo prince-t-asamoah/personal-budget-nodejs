@@ -16,6 +16,10 @@ const { hashPassword, verifyPassword } = require("../util/password.util");
 const { sendVerificationEmail } = require("../services/email.service");
 const { getGoogleUser } = require("../services/oauth/google.oauth.service");
 const { AUTH_ACCOUNTS_TYPE } = require("../types/auth_accounts.types");
+const REMEMBER_ME_SESSION_MAX_AGE_MS = Number.parseInt(
+  process.env.SESSION_REMEMBER_ME_MAX_AGE_MS || `${1000 * 60 * 60 * 24 * 30}`,
+  10,
+);
 
 /**
  *
@@ -231,6 +235,10 @@ const login = async (req, res, next) => {
     }
 
     req.session.user = userData;
+
+    req.session.cookie.maxAge = loginData.rememberMe
+      ? REMEMBER_ME_SESSION_MAX_AGE_MS
+      : null;
 
     res.status(200).json(
       new SuccessResponseDto({
