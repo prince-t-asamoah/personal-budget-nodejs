@@ -11,6 +11,7 @@ const {
   VerifyEmailError,
   UnAuthorizedError,
 } = require("../errors/AuthError");
+const { buildAuthUserResponse } = require("../util/buildAuthUserResponse.util");
 const { hashPassword, verifyPassword } = require("../util/password.util");
 const { sendVerificationEmail } = require("../services/email.service");
 const { getGoogleUser } = require("../services/oauth/google.oauth.service");
@@ -180,7 +181,12 @@ const verifyEmail = async (req, res, next) => {
  */
 const login = async (req, res, next) => {
   if (req.session.user) {
-    throw new LoginError("Already logged in", 400);
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message: "Already logged in",
+        data: buildAuthUserResponse(req.session.user),
+      }),
+    );
   }
 
   const loginData = new LoginDto(req.body);
@@ -229,17 +235,7 @@ const login = async (req, res, next) => {
     res.status(200).json(
       new SuccessResponseDto({
         message: "Login successful",
-        data: {
-          id: userData.id,
-          fullName: userData.fullName,
-          email: userData.email,
-          phoneNumber: userData.phoneNumber,
-          addressDetails: userData.addressDetails,
-          profileImageUrl: userData.profileImageUrl,
-          isVerified: userData.isVerified,
-          createdAt: userData.createdAt,
-          updatedAt: userData.updatedAt,
-        },
+        data: buildAuthUserResponse(userData),
       }),
     );
   } catch (error) {
