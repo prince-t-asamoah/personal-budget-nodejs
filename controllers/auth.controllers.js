@@ -13,9 +13,13 @@ const {
 } = require("../errors/AuthError");
 const { buildAuthUserResponse } = require("../util/buildAuthUserResponse.util");
 const { hashPassword, verifyPassword } = require("../util/password.util");
-const { sendVerificationEmail } = require("../services/email.service");
+const {
+  sendVerificationEmail,
+  sendResetPasswordEmail,
+} = require("../services/email.service");
 const { getGoogleUser } = require("../services/oauth/google.oauth.service");
 const { AUTH_ACCOUNTS_TYPE } = require("../types/auth_accounts.types");
+const { generatResetToken } = require("../util/generateResetToken.util");
 const REMEMBER_ME_SESSION_MAX_AGE_MS = Number.parseInt(
   process.env.SESSION_REMEMBER_ME_MAX_AGE_MS || `${1000 * 60 * 60 * 24 * 30}`,
   10,
@@ -274,6 +278,50 @@ const logout = (req, res, next) => {
 };
 
 /**
+ * Reset user password
+ *
+ * @type {Controller}
+ */
+const forgotPassword = async (req, res, next) => {
+  const email = req.body.email;
+  const dbClient = await db.connect();
+
+  try {
+    const userSelectQuery = await dbClient.query(
+      `SELECT * FROM users WHERE email = $1 FOR UPDATE`,
+      [email],
+    );
+    if (!userSelectQuery.rows.length) {
+      throw new Error("User not found");
+    }
+    const user = new UserDto(userSelectQuery.rows[0]);
+
+    const { token, hasedToken } = generatResetToken();
+
+    await dbClient.query(
+      `
+      UPDATE users
+      SET reset_password_token = $1, reset_password_expires_at = NOW() + INTERVAL '15 minutes'
+      WHERE email = $2
+      `,
+      [hasedToken, email],
+    );
+
+    await sendResetPasswordEmail(email, user.fullName, token);
+
+    return res
+      .status(200)
+      .json(
+        new SuccessResponseDto({
+          message: "Password reset link sent to email ",
+        }),
+      );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Google OAuth to signup and signin
  *
  * @type {Controller}
@@ -302,12 +350,15 @@ const googleOAuth = (req, res, _next) => {
  */
 const getExistingGoogleAuthUser = async (dbClient, userAuthAccount) => {
   /** @type {UserQuery} */
-  const selectUsersByIdQuery = await dbClient.query(`SELECT * FROM users WHERE id = $1`, [
-    userAuthAccount.user_id,
-  ]);
+  const selectUsersByIdQuery = await dbClient.query(
+    `SELECT * FROM users WHERE id = $1`,
+    [userAuthAccount.user_id],
+  );
 
   if (!selectUsersByIdQuery.rows[0]) {
-    throw new Error("User account linked to Google auth account was not found.");
+    throw new Error(
+      "User account linked to Google auth account was not found.",
+    );
   }
 
   return new UserDto(selectUsersByIdQuery.rows[0]);
@@ -366,7 +417,9 @@ const googleoAuthCallback = async (req, res, next) => {
   const { code, state } = req.query;
 
   if (!code) {
-    return next(new UnAuthorizedError("Missing OAuth authorization code.", 400));
+    return next(
+      new UnAuthorizedError("Missing OAuth authorization code.", 400),
+    );
   }
 
   if (state !== req.session.oauthState) {
@@ -397,9 +450,15 @@ const googleoAuthCallback = async (req, res, next) => {
     const userAuthAccount = selectAuthAccountsQuery.rows[0];
 
     if (userAuthAccount) {
-      req.session.user = await getExistingGoogleAuthUser(dbClient, userAuthAccount);
+      req.session.user = await getExistingGoogleAuthUser(
+        dbClient,
+        userAuthAccount,
+      );
     } else {
-      req.session.user = await createOrLinkGoogleOAuthUser(dbClient, googleUserData);
+      req.session.user = await createOrLinkGoogleOAuthUser(
+        dbClient,
+        googleUserData,
+      );
     }
 
     await dbClient.query("COMMIT");
@@ -438,9 +497,10 @@ const currentUser = async (req, res, next) => {
 
 module.exports = {
   signup,
-  verifyEmail,
   login,
+  verifyEmail,
   logout,
+  forgotPassword,
   googleOAuth,
   googleoAuthCallback,
   currentUser,

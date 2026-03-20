@@ -58,8 +58,19 @@ const verifyEmailValidator = [
     .withMessage("Token must be 64 characters long"),
 ];
 
+const forgotPasswordValidator = [
+  body("email")
+    .exists({ values: "undefined" })
+    .withMessage("Email is required")
+    .notEmpty()
+    .withMessage("Email cannot be empty")
+    .isEmail()
+    .withMessage("Valid email is required"),
+];
+
 module.exports = {
   signupValidator,
   loginValidator,
-  verifyEmailValidator
+  verifyEmailValidator,
+  forgotPasswordValidator,
 };

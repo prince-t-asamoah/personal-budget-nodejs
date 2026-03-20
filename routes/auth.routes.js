@@ -7,6 +7,7 @@ const {
   signupValidator,
   loginValidator,
   verifyEmailValidator,
+  forgotPasswordValidator,
 } = require("../validators/auth.validators");
 
 authRouter.post(
@@ -31,6 +32,13 @@ authRouter.post(
 );
 
 authRouter.post("/logout", authController.logout);
+
+authRouter.post(
+  "/forgot-password",
+  forgotPasswordValidator,
+  validateRequest,
+  authController.forgotPassword,
+);
 
 authRouter.get("/me", authController.currentUser);
 

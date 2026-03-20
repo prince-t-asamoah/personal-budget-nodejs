@@ -30,6 +30,33 @@ const sendVerificationEmail = async (email, name, verificationToken) => {
   });
 };
 
+
+
+/**
+ * Send  email to  reset password
+ * @param {string} email - User email address
+ * @param {string} name - User fullname
+ * @param {string} token - Verification token code
+ */
+const sendResetPasswordEmail = async (email, name, token) => {
+  const templatePath = path.join(
+    __dirname,
+    "../views/reset-password.handlebars",
+  );
+  const templateSource = fs.readFileSync(templatePath, "utf-8");
+  const tokenLink = `${APP_FRONTEND_BASE_URL}/reset-password?token=${token}`;
+  const template = handlebars.compile(templateSource);
+
+  const html = template({ name, email, tokenLink });
+
+  await emailClient({
+    to: email,
+    subject: "Reset Password",
+    html,
+  });
+};
+
 module.exports = {
   sendVerificationEmail,
+  sendResetPasswordEmail
 };
