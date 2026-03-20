@@ -278,7 +278,7 @@ const logout = (req, res, next) => {
 };
 
 /**
- * Reset user password
+ * Send reset password link
  *
  * @type {Controller}
  */
@@ -287,6 +287,8 @@ const forgotPassword = async (req, res, next) => {
   const dbClient = await db.connect();
 
   try {
+    await dbClient.query(`BEGIN`);
+
     const userSelectQuery = await dbClient.query(
       `SELECT * FROM users WHERE email = $1 FOR UPDATE`,
       [email],
@@ -307,17 +309,20 @@ const forgotPassword = async (req, res, next) => {
       [hasedToken, email],
     );
 
+    await dbClient.query("COMMIT");
+
     await sendResetPasswordEmail(email, user.fullName, token);
 
-    return res
-      .status(200)
-      .json(
-        new SuccessResponseDto({
-          message: "Password reset link sent to email ",
-        }),
-      );
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message: "Password reset link sent to email ",
+      }),
+    );
   } catch (error) {
+    await dbClient.query("ROLLBACK");
     next(error);
+  } finally {
+    dbClient.release();
   }
 };
 
