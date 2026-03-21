@@ -371,7 +371,7 @@ const resetPassword = async (req, res, next) => {
 
     if (isPreviousPassword) {
       throw new ResetPasswordError(
-        "New password cannot be the same as your previous password.",
+        "New password cannot be the same as previous password.",
         409,
       );
     }
