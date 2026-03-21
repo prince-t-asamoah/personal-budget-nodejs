@@ -1,32 +1,32 @@
 const BaseError = require("./BaseError");
 
-class LoginError extends BaseError {
-  constructor(message, status, options) {
-    super(message, status, options);
-  }
-}
+class LoginError extends BaseError {}
 
-class SignupError extends BaseError {
-  constructor(message, status, options) {
-    super(message, status, options);
-  }
-}
+class SignupError extends BaseError {}
 
-class LogoutError extends BaseError {
-  constructor(message, status, options) {
-    super(message, status, options);
-  }
-}
+class LogoutError extends BaseError {}
 
 class UnAuthorizedError extends BaseError {
-  constructor(message = 'User not authorized, please login.', status = 401, options) {
-    super(message, status, options);
+  constructor(message, status, options = {}) {
+    super(message ?? "User not authorized, please login.", status ?? 401, options);
   }
 }
 
 class VerifyEmailError extends BaseError {
-  constructor(message, status = 401, options) {
-    super(message, status, options);
+  constructor(message, status, options = {}) {
+    super(message, status ?? 401, options);
+  }
+}
+
+class ForgotPasswordError extends BaseError {
+  constructor(message, status, options = {}) {
+    super(message, status ?? 400, options);
+  }
+}
+
+class ResetPasswordError extends BaseError {
+  constructor(message, status, options = {}) {
+    super(message, status ?? 400, options);
   }
 }
 
@@ -35,5 +35,7 @@ module.exports = {
   SignupError,
   LogoutError,
   UnAuthorizedError,
-  VerifyEmailError
+  VerifyEmailError,
+  ForgotPasswordError,
+  ResetPasswordError,
 };
