@@ -10,6 +10,8 @@ const {
   LogoutError,
   VerifyEmailError,
   UnAuthorizedError,
+  ForgotPasswordError,
+  ResetPasswordError,
 } = require("../errors/AuthError");
 const { buildAuthUserResponse } = require("../util/buildAuthUserResponse.util");
 const { hashPassword, verifyPassword } = require("../util/password.util");
@@ -294,7 +296,10 @@ const forgotPassword = async (req, res, next) => {
       [email],
     );
     if (!userSelectQuery.rows.length) {
-      throw new Error("User not found");
+      throw new ForgotPasswordError(
+        "User account with this email does not exist.",
+        404,
+      );
     }
     const user = new UserDto(userSelectQuery.rows[0]);
 
@@ -316,6 +321,78 @@ const forgotPassword = async (req, res, next) => {
     return res.status(200).json(
       new SuccessResponseDto({
         message: "Password reset link sent to email ",
+      }),
+    );
+  } catch (error) {
+    await dbClient.query("ROLLBACK");
+    next(error);
+  } finally {
+    dbClient.release();
+  }
+};
+
+/**
+ *  Reset user password
+ *
+ * @type {Controller}
+ */
+const resetPassword = async (req, res, next) => {
+  const { token, confirmNewPassword, newPassword } = req.body;
+
+  const dbClient = await db.connect();
+
+  try {
+    if (confirmNewPassword !== newPassword) {
+      throw new ResetPasswordError("Reset passwords must be the same.", 400);
+    }
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    /** @type {UserQuery} */
+    const selectUserQuery = await dbClient.query(
+      `
+      SELECT * FROM users
+      WHERE reset_password_token = $1
+      AND reset_password_expires_at > NOW()
+      `,
+      [hashedToken],
+    );
+
+    if (!selectUserQuery.rows.length) {
+      throw new ResetPasswordError("Invalid or expired reset token.", 401);
+    }
+
+    const user = new UserDto(selectUserQuery.rows[0]);
+
+    const isPreviousPassword = await verifyPassword(
+      newPassword,
+      user.passwordHash,
+    );
+
+    if (isPreviousPassword) {
+      throw new ResetPasswordError(
+        "New password cannot be the same as your previous password.",
+        409,
+      );
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await dbClient.query(
+      `
+      UPDATE users
+      SET password_hash = $1,
+          reset_password_token = NULL,
+          reset_password_expires_at = NULL
+      WHERE id = $2`,
+      [hashedPassword, user.id],
+    );
+
+    await dbClient.query("COMMIT");
+
+    res.status(200).json(
+      new SuccessResponseDto({
+        message: "Password reset successful",
       }),
     );
   } catch (error) {
@@ -506,6 +583,7 @@ module.exports = {
   verifyEmail,
   logout,
   forgotPassword,
+  resetPassword,
   googleOAuth,
   googleoAuthCallback,
   currentUser,
