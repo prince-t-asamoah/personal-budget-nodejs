@@ -8,6 +8,7 @@ const {
   loginValidator,
   verifyEmailValidator,
   forgotPasswordValidator,
+  validateResetTokenValidator,
   resetPasswordValidator,
 } = require("../validators/auth.validators");
 
@@ -39,6 +40,13 @@ authRouter.post(
   forgotPasswordValidator,
   validateRequest,
   authController.forgotPassword,
+);
+
+authRouter.post(
+  "/validate-reset-token",
+  validateResetTokenValidator,
+  validateRequest,
+  authController.validateResetToken,
 );
 
 authRouter.post(

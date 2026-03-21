@@ -26,6 +26,10 @@ const REMEMBER_ME_SESSION_MAX_AGE_MS = Number.parseInt(
   process.env.SESSION_REMEMBER_ME_MAX_AGE_MS || `${1000 * 60 * 60 * 24 * 30}`,
   10,
 );
+const RESET_PASSWORD_SESSION_MAX_AGE_MS = Number.parseInt(
+  process.env.RESET_PASSWORD_SESSION_MAX_AGE_MS || `${1000 * 60 * 15}`,
+  10,
+);
 
 /**
  *
@@ -332,26 +336,20 @@ const forgotPassword = async (req, res, next) => {
 };
 
 /**
- *  Reset user password
+ * Validate reset password token and create a secure reset session.
  *
  * @type {Controller}
  */
-const resetPassword = async (req, res, next) => {
-  const { token, confirmNewPassword, newPassword } = req.body;
-
-  const dbClient = await db.connect();
+const validateResetToken = async (req, res, next) => {
+  const { token } = req.body;
 
   try {
-    if (confirmNewPassword !== newPassword) {
-      throw new ResetPasswordError("Reset passwords must be the same.", 400);
-    }
-
     const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
 
     /** @type {UserQuery} */
-    const selectUserQuery = await dbClient.query(
+    const selectUserQuery = await db.query(
       `
-      SELECT * FROM users
+      SELECT id FROM users
       WHERE reset_password_token = $1
       AND reset_password_expires_at > NOW()
       `,
@@ -362,33 +360,131 @@ const resetPassword = async (req, res, next) => {
       throw new ResetPasswordError("Invalid or expired reset token.", 401);
     }
 
-    const user = new UserDto(selectUserQuery.rows[0]);
+    req.session.passwordReset = {
+      tokenHash: hashedToken,
+      validatedAt: Date.now(),
+    };
 
-    const isPreviousPassword = await verifyPassword(
-      newPassword,
-      user.passwordHash,
+    await new Promise((resolve, reject) => {
+      req.session.save((saveError) => {
+        if (saveError) {
+          reject(saveError);
+          return;
+        }
+        resolve();
+      });
+    });
+
+    return res.status(200).json(
+      new SuccessResponseDto({
+        message: "Reset token validated successfully",
+      }),
     );
+  } catch (error) {
+    next(error);
+  }
+};
 
-    if (isPreviousPassword) {
+/**
+ *  Reset user password
+ *
+ * @type {Controller}
+ */
+const resetPassword = async (req, res, next) => {
+  const { token, confirmNewPassword, newPassword } = req.body;
+
+  try {
+    if (confirmNewPassword !== newPassword) {
+      throw new ResetPasswordError("Reset passwords must be the same.", 400);
+    }
+
+    const validatedResetSession = req.session.passwordReset;
+    const isValidatedResetSessionExpired =
+      validatedResetSession?.validatedAt &&
+      Date.now() - validatedResetSession.validatedAt >
+        RESET_PASSWORD_SESSION_MAX_AGE_MS;
+
+    if (isValidatedResetSessionExpired) {
+      delete req.session.passwordReset;
+    }
+
+    let hashedToken = validatedResetSession?.tokenHash || null;
+
+    if (!hashedToken && token) {
+      hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    }
+
+    if (!hashedToken) {
       throw new ResetPasswordError(
-        "New password cannot be the same as previous password.",
-        409,
+        "Reset password session is invalid or expired.",
+        401,
       );
     }
 
-    const hashedPassword = await hashPassword(newPassword);
+    const dbClient = await db.connect();
+    try {
+      await dbClient.query("BEGIN");
 
-    await dbClient.query(
-      `
-      UPDATE users
-      SET password_hash = $1,
-          reset_password_token = NULL,
-          reset_password_expires_at = NULL
-      WHERE id = $2`,
-      [hashedPassword, user.id],
-    );
+      /** @type {UserQuery} */
+      const selectUserQuery = await dbClient.query(
+        `
+        SELECT * FROM users
+        WHERE reset_password_token = $1
+        AND reset_password_expires_at > NOW()
+        `,
+        [hashedToken],
+      );
 
-    await dbClient.query("COMMIT");
+      if (!selectUserQuery.rows.length) {
+        delete req.session.passwordReset;
+        throw new ResetPasswordError("Invalid or expired reset token.", 401);
+      }
+
+      const user = new UserDto(selectUserQuery.rows[0]);
+
+      const isPreviousPassword = await verifyPassword(
+        newPassword,
+        user.passwordHash,
+      );
+
+      if (isPreviousPassword) {
+        throw new ResetPasswordError(
+          "New password cannot be the same as previous password.",
+          409,
+        );
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+
+      await dbClient.query(
+        `
+        UPDATE users
+        SET password_hash = $1,
+            reset_password_token = NULL,
+            reset_password_expires_at = NULL
+        WHERE id = $2`,
+        [hashedPassword, user.id],
+      );
+
+      await dbClient.query("COMMIT");
+    } catch (error) {
+      await dbClient.query("ROLLBACK");
+      throw error;
+    } finally {
+      dbClient.release();
+    }
+
+    delete req.session.passwordReset;
+
+    await new Promise((resolve, reject) => {
+      req.session.save((saveError) => {
+        if (saveError) {
+          reject(saveError);
+          return;
+        }
+        resolve();
+      });
+    });
 
     res.status(200).json(
       new SuccessResponseDto({
@@ -396,10 +492,7 @@ const resetPassword = async (req, res, next) => {
       }),
     );
   } catch (error) {
-    await dbClient.query("ROLLBACK");
     next(error);
-  } finally {
-    dbClient.release();
   }
 };
 
@@ -583,6 +676,7 @@ module.exports = {
   verifyEmail,
   logout,
   forgotPassword,
+  validateResetToken,
   resetPassword,
   googleOAuth,
   googleoAuthCallback,

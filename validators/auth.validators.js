@@ -68,12 +68,25 @@ const forgotPasswordValidator = [
     .withMessage("Valid email is required"),
 ];
 
-const resetPasswordValidator = [
+const validateResetTokenValidator = [
   body("token")
     .exists({ values: "undefined" })
     .withMessage("Token is required")
     .notEmpty()
     .withMessage("Token cannot be empty")
+    .trim()
+    .isString()
+    .withMessage("Token must be a string")
+    .isHexadecimal()
+    .withMessage("Token must be a valid hexadecimal string")
+    .isLength({ min: 64, max: 64 })
+    .withMessage("Token must be 64 characters long"),
+];
+
+const resetPasswordValidator = [
+  body("token")
+    .optional()
+    .trim()
     .isString()
     .withMessage("Token must be a string")
     .isHexadecimal()
@@ -105,5 +118,6 @@ module.exports = {
   loginValidator,
   verifyEmailValidator,
   forgotPasswordValidator,
+  validateResetTokenValidator,
   resetPasswordValidator,
 };
