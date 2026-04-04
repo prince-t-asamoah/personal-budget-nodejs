@@ -6,7 +6,6 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node server.js",
     "dev": "cross-env NODE_ENV=development node --watch server.js",
-    "test": "mocha \"test/**/*.test.js\" --recursive --exit",
     "db-migrate:dev": "cross-env NODE_ENV=development node ./database/migrate.js",
     "db-migrate:prod": "cross-env NODE_ENV=production node ./database/migrate.js"
   },
@@ -43,7 +42,8 @@
   "devDependencies": {
     "chai": "^6.2.2",
     "cross-env": "^10.1.0",
-    "mocha": "^11.3.0",
+    "mocha": "^11.7.5",
+    "sinon": "^21.0.3",
     "supertest": "^7.2.2"
   }
 }
