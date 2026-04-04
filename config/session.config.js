@@ -1,9 +1,14 @@
 const { Session } = require("express-session");
-const { RedisStore, redisClient } = require("./redis.config");
+
+let store;
+if (process.env.NODE_ENV !== "test") {
+  const { RedisStore, redisClient } = require("./redis.config");
+  store = new RedisStore({ client: redisClient, prefix: "budget-app:sessions:" });
+}
 
 /** @type {Session} - Express session configuration */
 const sessionConfig = {
-  store: new RedisStore({ client: redisClient, prefix: "budget-app:sessions:" }),
+  store,
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
