@@ -121,7 +121,7 @@ const signup = async (req, res, next) => {
       });
     }
 
-    return res.json(
+    return res.status(201).json(
       new SuccessResponseDto({
         message: "Check your email to verify your account email.",
         data: user,
