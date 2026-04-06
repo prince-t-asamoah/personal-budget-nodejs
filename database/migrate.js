@@ -1,4 +1,3 @@
-
 require("./../config/loadEnv")(); // Load environment variables
 
 const fs = require("fs");
@@ -25,10 +24,15 @@ async function runMigrations() {
   }
 
   console.log("All migrations applied successfully.");
-  await db.end();
 }
 
-runMigrations().catch((error) => {
-  console.error("Migration failed: ", error);
-  process.exit(1);
-});
+if (require.main === module) {
+  runMigrations()
+    .catch((error) => {
+      console.error("Migration failed: ", error);
+      process.exit(1);
+    })
+    .finally(() => db.end());
+}
+
+module.exports = runMigrations;
