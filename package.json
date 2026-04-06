@@ -6,6 +6,8 @@
   "scripts": {
     "start": "cross-env NODE_ENV=production node server.js",
     "dev": "cross-env NODE_ENV=development node --watch server.js",
+    "test": "cross-env NODE_ENV=test mocha --no-config \"test/integration/**/*.test.js\" --file test/integration/setup.js --recursive --timeout 15000 --exit",
+    "test:integration": "cross-env NODE_ENV=test mocha --no-config \"test/integration/**/*.test.js\" --file test/integration/setup.js --recursive --timeout 15000 --exit",
     "db-migrate:dev": "cross-env NODE_ENV=development node ./database/migrate.js",
     "db-migrate:prod": "cross-env NODE_ENV=production node ./database/migrate.js"
   },
@@ -41,6 +43,8 @@
   },
   "devDependencies": {
     "chai": "^6.2.2",
+    "chai-date-string": "^0.1.0",
+    "chai-uuid": "^1.0.6",
     "cross-env": "^10.1.0",
     "mocha": "^11.7.5",
     "sinon": "^21.0.3",
