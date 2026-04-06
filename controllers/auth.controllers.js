@@ -15,10 +15,7 @@ const {
 } = require("../errors/AuthError");
 const { buildAuthUserResponse } = require("../util/buildAuthUserResponse.util");
 const { hashPassword, verifyPassword } = require("../util/password.util");
-const {
-  sendVerificationEmail,
-  sendResetPasswordEmail,
-} = require("../services/email.service");
+const emailService = require("../services/email.service");
 const { getGoogleUser } = require("../services/oauth/google.oauth.service");
 const { AUTH_ACCOUNTS_TYPE } = require("../types/auth_accounts.types");
 const { generatResetToken } = require("../util/generateResetToken.util");
@@ -113,7 +110,7 @@ const signup = async (req, res, next) => {
 
     // Send activation email
     try {
-      await sendVerificationEmail(
+      await emailService.sendVerificationEmail(
         user.email,
         user.fullName,
         verification_token,
@@ -320,7 +317,7 @@ const forgotPassword = async (req, res, next) => {
 
     await dbClient.query("COMMIT");
 
-    await sendResetPasswordEmail(email, user.fullName, token);
+    await emailService.sendResetPasswordEmail(email, user.fullName, token);
 
     return res.status(200).json(
       new SuccessResponseDto({
