@@ -34,6 +34,7 @@ const errorHandler = (err, _req, res, _next) => {
       error: {
         type: err.name,
         status: statusCode,
+        cause: err.cause
       },
     }),
   );
