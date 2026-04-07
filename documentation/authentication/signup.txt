@@ -12,5 +12,12 @@ Scenario 1: User signup successfully with valid data
     AND account verification email sent to user email address
 
 Scenario 2: User signup unsuccessful with missing data
+    GIVEN the user provides incomplete data for signup
+    WHEN the details is sent as a POST request to endpoint /api/v1/auth/signup
+    THEN the endpoint should respond with status code 400
+    AND a response object body with success property set to false
+    AND a message property with string value "Error validating request body."
+    AND an error property with an object containing type, status and cause properties 
+
 Scenario 3: User signup unsuccessful because user already exist
 Scenario 4: User verifies email after signup successful
